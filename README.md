@@ -1,239 +1,393 @@
-Skew News
-
 <div align="center">
 
-AI-Powered News Analysis & Bias Explorer
+# 📰 SKEW NEWS
 
-A full-stack news platform that collects articles from multiple sources, analyzes sentiment and political framing with AI, and presents the results through a transparent news-reading experience.
+### **AI-Powered News Analysis & Bias Explorer**
+
+<p>
+  <strong>Read the story. Understand the framing. See the data.</strong>
+</p>
+
+<p>
+  A full-stack news platform that collects real articles, analyzes them with AI,
+  and turns raw news content into structured insights about sentiment and political framing.
+</p>
+
+<br/>
+
+<a href="YOUR_LIVE_DEMO_URL">
+  <img src="https://img.shields.io/badge/🚀_Live_Demo-Visit_Skew-111111?style=for-the-badge" alt="Live Demo"/>
+</a>
+<a href="YOUR_GITHUB_REPOSITORY_URL">
+  <img src="https://img.shields.io/badge/💻_Source_Code-GitHub-111111?style=for-the-badge&logo=github" alt="GitHub"/>
+</a>
+
+<br/><br/>
+
+<img src="https://img.shields.io/badge/Next.js-111111?style=flat-square&logo=nextdotjs&logoColor=white"/>
+<img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white"/>
+<img src="https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB"/>
+<img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white"/>
+<img src="https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white"/>
+<img src="https://img.shields.io/badge/Google_Gemini-4285F4?style=flat-square&logo=google&logoColor=white"/>
+<img src="https://img.shields.io/badge/pgvector-PostgreSQL-336791?style=flat-square&logo=postgresql&logoColor=white"/>
+<img src="https://img.shields.io/badge/Oxylabs-23E6A8?style=flat-square"/>
+<img src="https://img.shields.io/badge/Clerk-6C47FF?style=flat-square&logo=clerk&logoColor=white"/>
+
+<br/><br/>
 
 </div>
 
-Overview
+---
 
-Skew News is a full-stack AI-powered news analysis application.
+## 🎯 What is Skew?
 
-The platform collects articles from configured news sources, stores them in Supabase, analyzes article content with Google Gemini, and presents:
+**Skew** is an AI-powered news analysis platform built to answer a simple question:
 
-AI-generated summaries
+> **“How is this story being presented?”**
 
-Sentiment classification
+Instead of treating a news article as just a headline and a block of text, Skew processes the article and exposes structured signals such as:
 
-Political framing estimates
+| Signal | What Skew provides |
+|---|---|
+| 📝 Summary | AI-generated article summary |
+| ❤️ Sentiment | Positive / Neutral / Negative |
+| ⚖️ Political framing | Left / Center / Right / Mixed / Unclear |
+| 📊 Framing distribution | Left / Center / Right percentages |
+| 🎯 Confidence | AI confidence score |
+| 🧠 Framing notes | Explanation of the detected framing |
+| 🔎 Loaded terms | Potentially emotionally charged language |
+| 📰 Source | Original publication/source |
 
-Left / Center / Right framing percentages
+> **Important:** Political framing is an AI-generated estimate based on article content. It is not presented as objective political truth.
 
-Confidence scores
+---
 
-Framing notes
+## ✨ Why I Built It
 
-Loaded or emotionally charged terms
+I built Skew as a practical full-stack + AI engineering project rather than a simple AI demo.
 
-Source-level bias distribution
+The system combines:
 
-Political framing is presented as an AI estimate based on article text, not as objective truth.
+```text
+News ingestion
+      ↓
+Data validation
+      ↓
+PostgreSQL storage
+      ↓
+AI analysis
+      ↓
+Structured results
+      ↓
+Vector infrastructure
+      ↓
+News experience
+```
 
-The application also includes an automated scraping and processing pipeline using Oxylabs Scheduler, Supabase PostgreSQL, pgvector, and scheduled backend processing.
+This gave me the opportunity to work with:
 
-Why I Built This
+- Full-stack application architecture
+- Next.js App Router
+- TypeScript
+- PostgreSQL database design
+- AI model integration
+- Structured AI output validation
+- Web scraping pipelines
+- Scheduled background processing
+- Authentication
+- Vector embeddings
+- API design
+- Logging and observability
 
-I built this project to combine modern full-stack engineering with practical AI engineering:
+---
 
-Next.js and TypeScript
+# 🚀 Core Features
 
-AI integration with structured output
+### 📰 Multi-Source News
 
-News scraping and ingestion
+Skew is designed to ingest articles from multiple configured publishers.
 
-PostgreSQL database design
+Current configured sources include:
 
-Vector embeddings and semantic search infrastructure
+**BBC · Fox News · NPR · Reuters · The Guardian**
 
-Authentication
+Sources are managed through the database, allowing individual sources to be activated or deactivated.
 
-Automated background pipelines
+---
 
-API design
+### 🤖 AI-Powered Article Analysis
 
-Logging and observability
+Every analyzed article can contain:
 
-The goal is an end-to-end system that can collect → process → analyze → store → present news data automatically.
-
-Tech Stack
-
-Frontend
-
-Next.js
-
-React
-
-TypeScript
-
-Tailwind CSS
-
-Backend & Data
-
-Supabase / PostgreSQL
-
-pgvector
-
-Clerk
-
-Oxylabs
-
-AI
-
-Google Gemini
-
-Gemini Embedding 2
-
-Vercel AI SDK
-
-Zod
-
-Analytics
-
-PostHog
-
-Architecture
-
-News Sources
-     |
-     v
-Oxylabs Scheduler / Scraper
-     |
-     v
-Scrape Processing
-(validation / cleanup / dedupe)
-     |
-     v
-Supabase PostgreSQL
-     |
-     v
-Gemini AI Analysis
-     |
-     +---- Summary
-     +---- Sentiment
-     +---- Political framing
-     +---- Confidence
-     |
-     v
-Gemini Embedding 2
-     |
-     v
-pgvector
-     |
-     v
-Skew News UI
-
-Features
-
-Multi-Source News Collection
-
-Configured sources include:
-
-BBC
-
-Fox News
-
-NPR
-
-Reuters
-
-The Guardian
-
-Sources are stored in PostgreSQL and can be activated or deactivated.
-
-AI News Analysis
-
-Each article can be analyzed for:
-
-Neutral summary
-
-Sentiment score
-
-Sentiment label
-
-Political framing label
-
-Left percentage
-
-Center percentage
-
-Right percentage
-
+```text
+Summary
+Sentiment Score
+Sentiment Label
+Political Framing Label
+Left %
+Center %
+Right %
 Confidence
+Framing Notes
+Loaded Terms
+Disclaimer
+```
 
-Framing notes
+The backend also normalizes the three framing percentages so:
 
-Loaded terms
+```text
+Left % + Center % + Right % = 100%
+```
 
-The framing percentages are normalized so that:
+---
 
-Left + Center + Right = 100%
+### 📊 Transparent Bias Analysis
 
-Bias Transparency
+Skew does not simply display a label such as:
 
-The application does not treat AI classification as absolute truth. Political framing is explicitly presented as an AI-estimated interpretation of the article text.
+```text
+"Left"
+```
 
-Authentication
+Instead, it exposes the underlying distribution:
 
-Clerk provides:
+```text
+Left       ███████░░░  20%
+Center     █████████░  60%
+Right      ███████░░░  20%
+```
 
-Sign in
+This makes the result easier to interpret than a single opaque classification.
 
-Sign up
+---
 
-User authentication
+### 🧠 Semantic Search Infrastructure
 
-Protected routes
+The database supports vector embeddings through PostgreSQL **pgvector**.
 
-Vector Search Infrastructure
+The current schema uses:
 
-The database supports vector embeddings through PostgreSQL pgvector.
-
-The current configuration uses:
-
+```sql
 embedding extensions.vector(1536)
+```
 
-with an HNSW cosine-similarity index.
+and an HNSW index with cosine similarity.
 
-Embeddings are generated using Gemini Embedding 2.
+The application also contains a database-level article matching function for comparing article embeddings.
 
-Automated Processing
+> The vector layer is intentionally separated from the normal article metadata and AI-analysis fields so semantic retrieval can evolve independently.
 
-The ingestion architecture is:
+---
 
-Oxylabs Scheduler
-       |
-       v
-Scheduled scrape
-       |
-       v
-Oxylabs result
-       |
-       v
-Result processing
-       |
-       v
-Article validation / dedupe
-       |
-       v
-Supabase
-       |
-       v
-Gemini analysis
-       |
-       v
-Analysis stored
+### 🔄 Automated News Pipeline
 
-AI Analysis
+Skew is built around a pipeline rather than manual article entry.
 
-The AI layer uses structured output rather than relying on unvalidated free-form text.
+```text
+┌─────────────────┐
+│  News Sources   │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│    Oxylabs      │
+│ Scraper +       │
+│ Scheduler       │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Result          │
+│ Processing      │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Article         │
+│ Validation      │
+│ + Deduplication │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   Supabase      │
+│   PostgreSQL    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Gemini AI       │
+│ Analysis        │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Analysis +      │
+│ Embedding       │
+└─────────────────┘
+```
 
-A typical analysis contains:
+---
 
+# 🏗️ System Architecture
+
+```text
+                         ┌─────────────────────┐
+                         │     NEWS SOURCES    │
+                         │                     │
+                         │ BBC · NPR · Reuters │
+                         │ Fox · Guardian      │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │      OXYLABS        │
+                         │                     │
+                         │ Web Scraper API     │
+                         │ Scheduler            │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   INGESTION LAYER   │
+                         │                     │
+                         │ Validation          │
+                         │ Cleanup             │
+                         │ Deduplication       │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                    ┌──────────────────────────────┐
+                    │          SUPABASE             │
+                    │                               │
+                    │ PostgreSQL                    │
+                    │ Sources                       │
+                    │ Articles                      │
+                    │ Analyses                      │
+                    │ Logs                          │
+                    │ Schedule Runs                 │
+                    └──────────────┬────────────────┘
+                                   │
+                         ┌─────────┴─────────┐
+                         ▼                   ▼
+                ┌─────────────────┐   ┌─────────────────┐
+                │  GEMINI AI      │   │ GEMINI          │
+                │  ANALYSIS       │   │ EMBEDDINGS      │
+                │                 │   │                 │
+                │ Summary         │   │ Vector          │
+                │ Sentiment       │   │ representation  │
+                │ Framing         │   │                 │
+                │ Confidence      │   │                 │
+                └────────┬────────┘   └────────┬────────┘
+                         │                     │
+                         └──────────┬──────────┘
+                                    ▼
+                         ┌─────────────────────┐
+                         │       SKEW UI       │
+                         │                     │
+                         │ Home                │
+                         │ News Details        │
+                         │ Bias Analysis       │
+                         │ Source Information  │
+                         └─────────────────────┘
+```
+
+---
+
+# 🧰 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | **Next.js** |
+| Language | **TypeScript** |
+| UI | **React + Tailwind CSS** |
+| Authentication | **Clerk** |
+| Database | **Supabase PostgreSQL** |
+| Vector Database | **pgvector** |
+| AI Analysis | **Google Gemini** |
+| Embeddings | **Gemini Embedding 2** |
+| Web Scraping | **Oxylabs** |
+| Validation | **Zod** |
+| Analytics | **PostHog** |
+| AI Integration | **Vercel AI SDK** |
+
+---
+
+# 🗃️ Database Design
+
+Skew uses a relational PostgreSQL schema with clear separation between ingestion, analysis, and scheduling.
+
+### `sources`
+
+Stores configured news publishers.
+
+```text
+id
+name
+listing_url
+parser_strategy
+active
+logo_url
+created_at
+```
+
+### `articles`
+
+Stores the canonical article record.
+
+```text
+id
+source_id
+url
+canonical_url
+title
+image_url
+published_at
+raw_text
+scraped_at
+analyzed_at
+created_at
+```
+
+### `article_analyses`
+
+Stores AI analysis and vector data.
+
+```text
+article_id
+summary
+sentiment_score
+sentiment_label
+bias_score
+bias_label
+left_percentage
+center_percentage
+right_percentage
+confidence
+framing_notes
+loaded_terms
+disclaimer
+model
+embedding
+created_at
+```
+
+### `logs`
+
+Central application and pipeline logging.
+
+### `oxylabs_schedules`
+
+Stores synchronized Oxylabs schedules.
+
+### `oxylabs_schedule_runs`
+
+Tracks Oxylabs run/job processing state.
+
+---
+
+# 🧠 AI Analysis Example
+
+A structured analysis can look like:
+
+```json
 {
-  "summary": "Neutral article summary",
+  "summary": "Neutral summary of the article.",
   "sentimentScore": 0.12,
   "sentimentLabel": "neutral",
   "politicalFramingLabel": "center",
@@ -241,130 +395,137 @@ A typical analysis contains:
   "centerPercentage": 60,
   "rightPercentage": 20,
   "confidence": 0.78,
-  "framingNotes": "Explanation based on article text",
+  "framingNotes": "Explanation based on language and framing in the article.",
   "loadedTerms": [],
   "disclaimer": "AI-estimated framing based on article text."
 }
+```
 
-Analysis rules
+The backend validates and normalizes the model output before saving it to PostgreSQL.
 
-The analysis layer is designed to:
+---
 
-Use article text as evidence.
+# ⚙️ Analysis Pipeline
 
-Avoid assigning framing simply because of the publication source.
+The analysis orchestrator follows a controlled flow:
 
-Produce neutral summaries.
+```text
+Get pending articles
+        ↓
+Split into batches
+        ↓
+Analyze article
+        ↓
+Validate AI output
+        ↓
+Retry failed analysis once
+        ↓
+Normalize percentages
+        ↓
+Derive bias score
+        ↓
+Save analysis
+        ↓
+Write pipeline log
+```
 
-Identify loaded language actually present in the article.
+### Batch processing
 
-Produce a complete 100% framing split.
+Configure the batch size with:
 
-Reduce confidence when evidence is weak or ambiguous.
-
-Automated News Pipeline
-
-1. Schedule Synchronization
-
-Active sources are synchronized with Oxylabs.
-
-POST /api/oxylabs/schedules
-
-One schedule is created for each active source.
-
-2. Scheduled Result Processing
-
-Completed Oxylabs jobs are retrieved and processed.
-
-POST /api/oxylabs/scheduled-results/process
-
-Only completed jobs are processed.
-
-3. Article Ingestion
-
-The ingestion pipeline:
-
-Extracts article information
-
-Validates required fields
-
-Cleans article content
-
-Checks duplicate URLs
-
-Saves valid articles to Supabase
-
-4. AI Analysis
-
-Pending articles are sent to Gemini.
-
-The analysis pipeline processes articles in batches.
-
+```env
 ANALYSIS_BATCH_SIZE=5
+```
 
-This means the analysis pipeline processes up to five articles per batch.
+For example:
 
-5. Logging
+```text
+67 pending articles
+       ↓
+5 articles / batch
+       ↓
+14 batches
+```
 
-Pipeline activity is written to the logs table and server logs.
+The batch size controls how many articles are handled together by the analysis orchestrator.
 
-Database
+---
 
-The main PostgreSQL tables are:
+# 🔌 API Endpoints
 
-Table
+### Analyze articles
 
-Purpose
+```http
+POST /api/analyze
+```
 
-sources
+Example PowerShell request:
 
-Configured news sources
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:3000/api/analyze" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Headers @{"x-SKEW-admin-secret"="YOUR_ADMIN_SECRET"} `
+  -Body '{}'
+```
 
-articles
+---
 
-Scraped article data
+### Synchronize Oxylabs schedules
 
-article_analyses
+```http
+POST /api/oxylabs/schedules
+```
 
-AI analysis and embeddings
+Example:
 
-logs
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:3000/api/oxylabs/schedules" `
+  -Method POST `
+  -Headers @{"x-SKEW-admin-secret"="YOUR_ADMIN_SECRET"}
+```
 
-Pipeline/application logs
+---
 
-oxylabs_schedules
+### List schedules
 
-Stored Oxylabs schedules
+```http
+GET /api/oxylabs/schedules
+```
 
-oxylabs_schedule_runs
+---
 
-Oxylabs execution history
+### Process scheduled results
 
-Vector configuration
+```http
+POST /api/oxylabs/scheduled-results/process
+```
 
-create extension if not exists vector
-with schema extensions;
+---
 
-The analysis table contains:
+# 📁 Project Structure
 
-embedding extensions.vector(1536)
-
-and an HNSW cosine-similarity index.
-
-Project Structure
-
+```text
 skew-news/
+│
 ├── app/
 │   ├── api/
 │   │   ├── analyze/
 │   │   ├── cron/
 │   │   ├── oxylabs/
+│   │   │   ├── runs/
+│   │   │   ├── scheduled-results/
+│   │   │   └── schedules/
 │   │   └── scrape/
+│   │
 │   ├── news/
 │   ├── sign-in/
 │   └── sign-up/
 │
 ├── components/
+│
 ├── lib/
 │   ├── ai/
 │   ├── pipeline/
@@ -373,6 +534,7 @@ skew-news/
 │   └── api/
 │
 ├── public/
+│
 ├── supabase/
 │   ├── schema.sql
 │   └── seed.sql
@@ -381,36 +543,28 @@ skew-news/
 ├── AGENTS.md
 ├── package.json
 └── README.md
+```
 
-Quick Start
+---
 
-Prerequisites
+# 🚀 Getting Started
 
-Install:
+## 1. Clone the repository
 
-Git
-
-Node.js
-
-npm
-
-Clone
-
+```bash
 git clone YOUR_GITHUB_REPOSITORY_URL
 cd skew-news
+```
 
-Install dependencies
+## 2. Install dependencies
 
+```bash
 npm install
+```
 
-Environment variables
+## 3. Create `.env.local`
 
-Create:
-
-.env.local
-
-Add:
-
+```env
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 
@@ -433,174 +587,123 @@ GEMINI_API_KEY=
 ANALYSIS_BATCH_SIZE=5
 
 CRON_SECRET=
+```
 
-Never commit .env.local or API keys.
+## 4. Configure Supabase
 
-Supabase setup
+Open the Supabase SQL Editor and run:
 
-Open the Supabase SQL Editor and execute the project's schema.
+```text
+supabase/schema.sql
+```
 
-The schema creates the required tables, pgvector configuration, vector column, HNSW index, constraints, indexes, matching function, and RLS configuration.
+Then, if included:
 
-If the project contains a seed file, execute:
-
+```text
 supabase/seed.sql
+```
 
-Run locally
+## 5. Start the application
 
+```bash
 npm run dev
+```
 
-Open:
+Then open:
 
+```text
 http://localhost:3000
+```
 
-Manual API Testing
+---
 
-Run article analysis
+# 🔐 Environment Variables
 
-PowerShell:
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk public/client key |
+| `CLERK_SECRET_KEY` | Clerk server authentication |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side database access |
+| `OXY_WSA_USERNAME` | Oxylabs username |
+| `OXY_WSA_PASSWORD` | Oxylabs password |
+| `SKEW_ADMIN_SECRET` | Admin API authentication |
+| `GEMINI_API_KEY` | Gemini API authentication |
+| `ANALYSIS_BATCH_SIZE` | Analysis batch size |
+| `CRON_SECRET` | Cron endpoint authentication |
 
-Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/analyze" `
-  -Method POST `
-  -ContentType "application/json" `
-  -Headers @{"x-SKEW-admin-secret"="YOUR_ADMIN_SECRET"} `
-  -Body '{}'
+---
 
-Synchronize Oxylabs schedules
+# 🔒 Security
 
-Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/oxylabs/schedules" `
-  -Method POST `
-  -Headers @{"x-SKEW-admin-secret"="YOUR_ADMIN_SECRET"}
+**Never commit secrets to GitHub.**
 
-List stored schedules
+Do not commit:
 
-Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/oxylabs/schedules" `
-  -Method GET
-
-Process completed Oxylabs results
-
-Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/oxylabs/scheduled-results/process" `
-  -Method POST `
-  -Headers @{"x-SKEW-admin-secret"="YOUR_ADMIN_SECRET"}
-
-Environment Variables
-
-Variable
-
-Purpose
-
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-
-Clerk frontend key
-
-CLERK_SECRET_KEY
-
-Clerk server authentication
-
-NEXT_PUBLIC_SUPABASE_URL
-
-Supabase project URL
-
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-Supabase public key
-
-SUPABASE_SERVICE_ROLE_KEY
-
-Server-side Supabase access
-
-OXY_WSA_USERNAME
-
-Oxylabs account username
-
-OXY_WSA_PASSWORD
-
-Oxylabs account password
-
-SKEW_ADMIN_SECRET
-
-Admin API protection
-
-GEMINI_API_KEY
-
-Gemini API authentication
-
-ANALYSIS_BATCH_SIZE
-
-Articles processed per analysis batch
-
-CRON_SECRET
-
-Cron endpoint protection
-
-Deployment
-
-Before deploying:
-
-Configure production environment variables.
-
-Configure the Supabase production database.
-
-Configure Oxylabs credentials.
-
-Configure Gemini API access.
-
-Configure the production cron mechanism.
-
-Keep server-side credentials out of client-side code.
-
-Security
-
-Never commit:
-
-.env.local
+```text
 .env
+.env.local
 API keys
 Supabase service-role keys
 Oxylabs credentials
 Clerk secret keys
 Admin secrets
 Cron secrets
+```
 
-If a secret is accidentally pushed to GitHub, rotate it immediately. Removing the secret from the latest commit does not make an exposed credential safe.
+Use `.env.example` with empty placeholders instead.
 
-Future Improvements
+If a secret has ever been pushed to a public repository, **rotate it immediately**. Simply deleting the file later is not enough.
 
-Personalized news recommendations
+---
 
-More robust source comparison
+# 📈 Future Improvements
 
-User-specific reading preferences
+The architecture leaves room for several extensions:
 
-Improved article clustering
+- Personalized news recommendations
+- User-specific reading preferences
+- Article clustering
+- Improved semantic retrieval
+- More news sources
+- Bias-analysis evaluation datasets
+- AI quality benchmarking
+- Advanced analytics dashboards
+- Better background-job monitoring
+- More sophisticated recommendation ranking
 
-Advanced semantic search
+---
 
-Bias-analysis evaluation datasets
+# 👨‍💻 Author
 
-AI analysis quality benchmarking
+<div align="center">
 
-Additional news sources
+## **Rahul Debnath**
 
-Advanced analytics dashboards
+**Full-Stack Developer · AI Engineering · Problem Solving**
 
-Improved background-job observability
+Building practical applications at the intersection of  
+**software engineering, AI, and data-driven systems.**
 
-Author
+</div>
 
-Rahul Debnath
+---
 
-Full-Stack Developer | AI Engineering | Problem Solving
+# 📜 Attribution
 
-This repository represents my customized implementation and engineering work on the Skew News application, including the AI integration, Gemini-based analysis, vector database configuration, automated ingestion pipeline, database setup, and application development.
+This repository is a **customized and extended implementation** based on the codebase that I originally used as a starting point.
 
-Attribution & License
+The implementation in this repository includes my own configuration, database setup, AI integration, Gemini-based analysis workflow, vector infrastructure, automated ingestion pipeline, API integration, and application-level modifications.
 
-This repository has been customized and extended from the project/codebase that I originally used as a starting point.
+If the original project license requires attribution, the original license and required notices should remain in the repository.
 
-If the original repository's license requires attribution, retain the original license and attribution notices in this repository. The sections of this repository that I independently modified or added represent my own engineering work.
+---
 
+<div align="center">
+
+### ⭐ If you find the project interesting, consider starring the repository.
+
+**Built with Next.js · TypeScript · Supabase · Gemini · pgvector · Oxylabs**
+
+</div>
