@@ -42,7 +42,9 @@
 
 ## 🎯 What is Skew?
 
-**Skew** is an AI-powered news analysis platform built to answer a simple question:
+Skew is a full-stack AI news platform that scrapes real articles from multiple sources, analyzes each one for sentiment and political framing, and surfaces a bias breakdown before you ever open the story. Every article card shows a bias metric; every details page shows the full AI-estimated framing, and a pgvector-powered Related Articles section connects stories by meaning instead of shared keywords, so the whole feed refreshes itself every hour with nobody at the keyboard.
+
+Skew is also built with Vibe Engineering: an AGENTS.md file defines the project's rules, architecture, and data model once, so the AI coding agent reads it before every feature, drafts its own implementation prompt, and only writes code after you approve it. Every route, page, and pipeline in this repo was shipped through that same prompt → approve → build loop.
 
 > **“How is this story being presented?”**
 
