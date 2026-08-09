@@ -66,7 +66,7 @@ export function SiteFooter() {
 
       <div className="border-t border-white/10">
         <div className="mx-auto max-w-(--container-app) px-6 py-5 text-caption">
-          © 2026 Skew News. All rights reserved.
+          © 2026 Rahul Debnath. All rights reserved.
         </div>
       </div>
     </footer>
