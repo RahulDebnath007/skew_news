@@ -28,13 +28,13 @@ import type {
  */
 
 /** Default valid articles inserted per source (§16). */
-export const DEFAULT_LIMIT_PER_SOURCE = 5;
+export const DEFAULT_LIMIT_PER_SOURCE = 3;
 /**
  * Detail pages scraped per source is capped well above the target so rejects
  * don't starve the limit, but the run stops once the limit is inserted.
  */
-const CANDIDATE_MULTIPLIER = 4;
-const MIN_CANDIDATE_CAP = 15;
+const CANDIDATE_MULTIPLIER = 2;
+const MIN_CANDIDATE_CAP = 6;
 
 /** Resolve the sources to scrape from the request selection (§8). */
 async function selectSources(selection?: string[]): Promise<Source[]> {

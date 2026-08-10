@@ -10,7 +10,7 @@ import "server-only";
 const REALTIME_ENDPOINT = "https://realtime.oxylabs.io/v1/queries";
 
 /** Rendered Realtime requests can take a while; keep the client near 180s (skill). */
-export const OXYLABS_TIMEOUT_MS = 180_000;
+export const OXYLABS_TIMEOUT_MS = 30_000;
 
 /** Result of a successful HTML fetch through Oxylabs. */
 export interface FetchHtmlResult {
