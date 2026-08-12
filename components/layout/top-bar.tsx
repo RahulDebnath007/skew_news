@@ -1,6 +1,38 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+
+const SAVED_POSTS_KEY = "skew-saved-posts";
+
+interface SavedPost {
+  id: string;
+  title: string;
+  imageUrl: string;
+  source?: string;
+  publishedDate?: string;
+}
+
+function isValidSavedPost(
+  post: unknown,
+): post is SavedPost {
+  if (!post || typeof post !== "object") {
+    return false;
+  }
+
+  const item = post as Partial<SavedPost>;
+
+  return (
+    typeof item.id === "string" &&
+    item.id.trim() !== "" &&
+    item.id !== "undefined" &&
+    item.id !== "null" &&
+    typeof item.title === "string" &&
+    item.title.trim() !== "" &&
+    typeof item.imageUrl === "string" &&
+    item.imageUrl.trim() !== ""
+  );
+}
 
 function GlobeIcon() {
   return (
@@ -39,7 +71,7 @@ function ChevronDownIcon() {
   );
 }
 
-function SearchIcon() {
+function BookmarkIcon() {
   return (
     <svg
       width="14"
@@ -52,96 +84,68 @@ function SearchIcon() {
       strokeLinejoin="round"
       aria-hidden
     >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
+      <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
     </svg>
   );
 }
 
-function MapPinIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
-      <circle cx="12" cy="10" r="2.5" />
-    </svg>
-  );
-}
-
-type Theme = "light" | "dark" | "auto";
-
-type LocationOption = {
-  city: string;
-  country: string;
-};
-
-const LOCATIONS: LocationOption[] = [
-  { city: "Kolkata", country: "India" },
-  { city: "Delhi", country: "India" },
-  { city: "Mumbai", country: "India" },
-  { city: "Bengaluru", country: "India" },
-  { city: "Chennai", country: "India" },
-  { city: "Hyderabad", country: "India" },
-  { city: "Pune", country: "India" },
-  { city: "London", country: "United Kingdom" },
-  { city: "New York", country: "United States" },
-  { city: "Los Angeles", country: "United States" },
-  { city: "Toronto", country: "Canada" },
-  { city: "Sydney", country: "Australia" },
-  { city: "Singapore", country: "Singapore" },
-  { city: "Dubai", country: "United Arab Emirates" },
-  { city: "Tokyo", country: "Japan" },
-];
-
+/**
+ * Full-width utility bar.
+ *
+ * Features:
+ * - Light / Dark / Auto theme
+ * - Dynamic date
+ * - Saved posts
+ * - Automatic cleanup of invalid saved posts
+ */
 export function TopBar() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [currentDate, setCurrentDate] = useState("");
+  const [theme, setTheme] = useState<
+    "light" | "dark" | "auto"
+  >("light");
 
-  const [selectedLocation, setSelectedLocation] =
-    useState<LocationOption | null>(null);
+  const [currentDate, setCurrentDate] =
+    useState("");
 
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [locationSearch, setLocationSearch] = useState("");
+  const [savedPosts, setSavedPosts] = useState<
+    SavedPost[]
+  >([]);
 
-  const locationRef = useRef<HTMLDivElement>(null);
+  const [savedOpen, setSavedOpen] =
+    useState(false);
 
-  /*
-   * Apply selected theme.
+  const savedRef =
+    useRef<HTMLDivElement>(null);
+
+  /**
+   * Apply theme.
    */
-  function applyTheme(selectedTheme: Theme) {
+  function applyTheme(
+    selectedTheme: "light" | "dark" | "auto",
+  ) {
     const root = document.documentElement;
 
     if (selectedTheme === "dark") {
       root.classList.add("dark");
-      return;
-    }
-
-    if (selectedTheme === "light") {
+    } else if (selectedTheme === "light") {
       root.classList.remove("dark");
-      return;
+    } else {
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+
+      root.classList.toggle(
+        "dark",
+        prefersDark,
+      );
     }
-
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-
-    root.classList.toggle("dark", prefersDark);
   }
 
-  /*
-   * Load saved theme and location.
+  /**
+   * Load saved theme.
    */
   useEffect(() => {
-    const savedTheme = localStorage.getItem("skew-theme");
+    const savedTheme =
+      localStorage.getItem("skew-theme");
 
     if (
       savedTheme === "light" ||
@@ -153,122 +157,176 @@ export function TopBar() {
     } else {
       applyTheme("light");
     }
-
-    const savedLocation = localStorage.getItem("skew-location");
-
-    if (savedLocation) {
-      try {
-        const parsedLocation = JSON.parse(savedLocation);
-
-        if (
-          parsedLocation &&
-          typeof parsedLocation.city === "string" &&
-          typeof parsedLocation.country === "string"
-        ) {
-          setSelectedLocation(parsedLocation);
-        }
-      } catch {
-        localStorage.removeItem("skew-location");
-      }
-    }
   }, []);
 
-  /*
-   * Handle theme changes.
+  /**
+   * Change theme.
    */
-  function handleThemeChange(selectedTheme: Theme) {
+  function handleThemeChange(
+    selectedTheme: "light" | "dark" | "auto",
+  ) {
     setTheme(selectedTheme);
-    localStorage.setItem("skew-theme", selectedTheme);
+
+    localStorage.setItem(
+      "skew-theme",
+      selectedTheme,
+    );
+
     applyTheme(selectedTheme);
   }
 
-  /*
+  /**
    * Dynamic date.
    */
   useEffect(() => {
     function updateDate() {
-      const formattedDate = new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }).format(new Date());
+      const formattedDate =
+        new Intl.DateTimeFormat("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        }).format(new Date());
 
       setCurrentDate(formattedDate);
     }
 
     updateDate();
 
-    const interval = setInterval(updateDate, 60 * 1000);
+    const interval = setInterval(
+      updateDate,
+      60 * 1000,
+    );
 
     return () => clearInterval(interval);
   }, []);
 
-  /*
-   * Close location dropdown when clicking outside.
+  /**
+   * Load and clean saved posts.
    */
   useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (
-        locationRef.current &&
-        !locationRef.current.contains(event.target as Node)
-      ) {
-        setLocationOpen(false);
+    function loadSavedPosts() {
+      try {
+        const raw = localStorage.getItem(
+          SAVED_POSTS_KEY,
+        );
+
+        // Nothing has ever been saved.
+        if (!raw) {
+          setSavedPosts([]);
+          return;
+        }
+
+        const parsed: unknown = JSON.parse(raw);
+
+        // Invalid storage format.
+        if (!Array.isArray(parsed)) {
+          localStorage.removeItem(
+            SAVED_POSTS_KEY,
+          );
+
+          setSavedPosts([]);
+          return;
+        }
+
+        // Keep ONLY valid saved articles.
+        const validPosts = parsed.filter(
+          isValidSavedPost,
+        );
+
+        // Clean corrupted/blank old data.
+        if (
+          validPosts.length !== parsed.length
+        ) {
+          if (validPosts.length === 0) {
+            localStorage.removeItem(
+              SAVED_POSTS_KEY,
+            );
+          } else {
+            localStorage.setItem(
+              SAVED_POSTS_KEY,
+              JSON.stringify(validPosts),
+            );
+          }
+        }
+
+        setSavedPosts(validPosts);
+      } catch {
+        localStorage.removeItem(
+          SAVED_POSTS_KEY,
+        );
+
+        setSavedPosts([]);
       }
     }
 
-    document.addEventListener("mousedown", handleOutsideClick);
+    // Load immediately.
+    loadSavedPosts();
+
+    // Update when NewsCard saves/unsaves.
+    window.addEventListener(
+      "skew-saved-posts-updated",
+      loadSavedPosts,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener(
+        "skew-saved-posts-updated",
+        loadSavedPosts,
+      );
     };
   }, []);
 
-  /*
-   * Select a location.
+  /**
+   * Close dropdown when clicking outside.
    */
-  function handleLocationSelect(location: LocationOption) {
-    setSelectedLocation(location);
-    localStorage.setItem(
-      "skew-location",
-      JSON.stringify(location),
+  useEffect(() => {
+    function handleOutsideClick(
+      event: MouseEvent,
+    ) {
+      const target = event.target as Node;
+
+      if (
+        savedRef.current &&
+        !savedRef.current.contains(target)
+      ) {
+        setSavedOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick,
     );
 
-    setLocationOpen(false);
-    setLocationSearch("");
-  }
-
-  /*
-   * Filter locations based on search.
-   */
-  const filteredLocations = LOCATIONS.filter((location) => {
-    const search = locationSearch.trim().toLowerCase();
-
-    if (!search) return true;
-
-    return (
-      location.city.toLowerCase().includes(search) ||
-      location.country.toLowerCase().includes(search)
-    );
-  });
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
+    };
+  }, []);
 
   return (
     <div className="w-full bg-topbar-bg text-text-secondary">
       <div className="mx-auto flex h-10 max-w-(--container-app) items-center justify-between px-6 text-caption">
 
-        {/* LEFT SIDE */}
+        {/* LEFT */}
         <div className="flex min-w-0 items-center gap-5">
-          <span className="cursor-pointer hover:text-white">
+
+          <span className="hover:text-white">
             Browser Extension
           </span>
 
-          {/* THEME */}
+          {/* Theme */}
           <span className="hidden items-center gap-2 md:flex">
             <span>Theme:</span>
 
             <button
               type="button"
-              onClick={() => handleThemeChange("light")}
+              onClick={() =>
+                handleThemeChange("light")
+              }
               className={
                 theme === "light"
                   ? "font-semibold text-white"
@@ -280,7 +338,9 @@ export function TopBar() {
 
             <button
               type="button"
-              onClick={() => handleThemeChange("dark")}
+              onClick={() =>
+                handleThemeChange("dark")
+              }
               className={
                 theme === "dark"
                   ? "font-semibold text-white"
@@ -292,7 +352,9 @@ export function TopBar() {
 
             <button
               type="button"
-              onClick={() => handleThemeChange("auto")}
+              onClick={() =>
+                handleThemeChange("auto")
+              }
               className={
                 theme === "auto"
                   ? "font-semibold text-white"
@@ -304,10 +366,10 @@ export function TopBar() {
           </span>
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT */}
         <div className="flex min-w-0 items-center gap-4">
 
-          {/* DATE */}
+          {/* Date */}
           <span className="hidden lg:inline">
             {currentDate}
           </span>
@@ -316,140 +378,128 @@ export function TopBar() {
             |
           </span>
 
-          {/* LOCATION */}
-          <div
-            ref={locationRef}
-            className="relative hidden sm:block"
-          >
-            <button
-              type="button"
-              onClick={() => setLocationOpen((open) => !open)}
-              className="flex items-center gap-1.5 hover:text-white"
-              aria-expanded={locationOpen}
-              aria-haspopup="dialog"
-            >
-              <MapPinIcon />
-
-              <span>
-                {selectedLocation
-                  ? selectedLocation.city
-                  : "Set Location"}
-              </span>
-
-              <ChevronDownIcon />
-            </button>
-
-            {locationOpen && (
-              <div className="absolute right-0 top-7 z-50 w-72 rounded-lg border border-border bg-bg-primary p-3 text-text-primary shadow-lg">
-
-                {/* HEADER */}
-                <div className="mb-3">
-                  <p className="text-body-sm font-semibold">
-                    Set your location
-                  </p>
-
-                  <p className="mt-1 text-caption text-text-secondary">
-                    Choose a city for your news location.
-                  </p>
-                </div>
-
-                {/* SEARCH */}
-                <div className="relative mb-3">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">
-                    <SearchIcon />
-                  </span>
-
-                  <input
-                    type="text"
-                    value={locationSearch}
-                    onChange={(event) =>
-                      setLocationSearch(event.target.value)
-                    }
-                    placeholder="Search city or country..."
-                    className="w-full rounded-md border border-border bg-bg-secondary py-2 pl-9 pr-3 text-body-sm text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
-                    autoFocus
-                  />
-                </div>
-
-                {/* LOCATION LIST */}
-                <div className="max-h-56 overflow-y-auto">
-                  {filteredLocations.length > 0 ? (
-                    filteredLocations.map((location) => {
-                      const isSelected =
-                        selectedLocation?.city === location.city &&
-                        selectedLocation?.country === location.country;
-
-                      return (
-                        <button
-                          key={`${location.city}-${location.country}`}
-                          type="button"
-                          onClick={() =>
-                            handleLocationSelect(location)
-                          }
-                          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition ${
-                            isSelected
-                              ? "bg-bg-secondary"
-                              : "hover:bg-bg-secondary"
-                          }`}
-                        >
-                          <MapPinIcon />
-
-                          <span className="min-w-0">
-                            <span className="block text-body-sm font-medium">
-                              {location.city}
-                            </span>
-
-                            <span className="block text-caption text-text-secondary">
-                              {location.country}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <p className="px-3 py-4 text-center text-body-sm text-text-secondary">
-                      No locations found.
-                    </p>
-                  )}
-                </div>
-
-                {/* CLEAR LOCATION */}
-                {selectedLocation && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedLocation(null);
-                      localStorage.removeItem("skew-location");
-                      setLocationOpen(false);
-                      setLocationSearch("");
-                    }}
-                    className="mt-3 w-full border-t border-border pt-3 text-caption text-text-secondary hover:text-text-primary"
-                  >
-                    Clear location
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Location */}
+          <span className="hidden hover:text-white sm:inline">
+            Set Location
+          </span>
 
           <span className="hidden text-border sm:inline">
             |
           </span>
 
-          {/* EDITION */}
-          <span className="flex shrink-0 items-center gap-1.5 hover:text-white">
-            <GlobeIcon />
+          {/* SAVED */}
+          <div
+            ref={savedRef}
+            className="relative shrink-0"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setSavedOpen(
+                  (open) => !open,
+                )
+              }
+              className="flex items-center gap-1.5 hover:text-white"
+              aria-expanded={savedOpen}
+              aria-haspopup="menu"
+            >
+              <BookmarkIcon />
 
-            <span className="hidden sm:inline">
-              International Edition
-            </span>
+              <span>Saved</span>
 
-            <span className="sm:hidden">
-              Edition
-            </span>
+              {/* Show count ONLY when there are valid saved posts */}
+              {savedPosts.length > 0 && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-semibold text-black">
+                  {savedPosts.length}
+                </span>
+              )}
 
-            <ChevronDownIcon />
-          </span>
+              <ChevronDownIcon />
+            </button>
+
+            {/* DROPDOWN */}
+            {savedOpen && (
+              <div className="absolute right-0 top-7 z-50 w-80 overflow-hidden rounded-lg border border-border bg-bg-primary text-text-primary shadow-lg">
+
+                {/* Header */}
+                <div className="border-b border-border px-4 py-3">
+                  <p className="text-body-sm font-semibold">
+                    Saved Posts
+                  </p>
+
+                  <p className="mt-1 text-caption text-text-secondary">
+                    Articles you saved to read later.
+                  </p>
+                </div>
+
+                {/* EMPTY STATE */}
+                {savedPosts.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+
+                    <div className="mb-3 flex justify-center text-text-secondary">
+                      <BookmarkIcon />
+                    </div>
+
+                    <p className="text-body-sm font-medium">
+                      No saved posts yet
+                    </p>
+
+                    <p className="mt-1 text-caption text-text-secondary">
+                      Click the bookmark icon on an
+                      article to save it.
+                    </p>
+                  </div>
+                ) : (
+                  /* SAVED POSTS */
+                  <div className="max-h-96 overflow-y-auto">
+                    {savedPosts.map(
+                      (post) => (
+                        <Link
+                          key={post.id}
+                          href={`/news/${post.id}`}
+                          onClick={() =>
+                            setSavedOpen(false)
+                          }
+                          className="flex gap-3 border-b border-border p-3 transition hover:bg-bg-secondary"
+                        >
+                          {/* Image */}
+                          <div className="h-16 w-20 shrink-0 overflow-hidden rounded-md bg-surface">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={post.imageUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+
+                          {/* Information */}
+                          <div className="min-w-0">
+                            <p className="line-clamp-2 text-body-sm font-medium">
+                              {post.title}
+                            </p>
+
+                            {(post.source ||
+                              post.publishedDate) && (
+                              <p className="mt-1 truncate text-caption text-text-secondary">
+                                {[
+                                  post.source,
+                                  post.publishedDate,
+                                ]
+                                  .filter(Boolean)
+                                  .join(
+                                    " · ",
+                                  )}
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      ),
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
