@@ -32,9 +32,8 @@ function MenuIcon() {
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", active: true, dot: false },
-  { label: "For You", href: "/", active: false, dot: true },
-  { label: "Local", href: "/", active: false, dot: false },
-  { label: "Blindspot", href: "/", active: false, dot: false },
+   { label: "About", href: "/about", active: false, dot: false },
+  { label: "Contact", href: "/contact", active: false, dot: false },
 ];
 
 /** Sticky site header: menu, wordmark, primary nav, auth actions. */
