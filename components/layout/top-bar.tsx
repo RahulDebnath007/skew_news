@@ -1,37 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-const SAVED_POSTS_KEY = "skew-saved-posts";
+type Theme = "light" | "dark" | "auto";
 
 interface SavedPost {
   id: string;
   title: string;
-  imageUrl: string;
+  imageUrl?: string;
   source?: string;
   publishedDate?: string;
-}
-
-function isValidSavedPost(
-  post: unknown,
-): post is SavedPost {
-  if (!post || typeof post !== "object") {
-    return false;
-  }
-
-  const item = post as Partial<SavedPost>;
-
-  return (
-    typeof item.id === "string" &&
-    item.id.trim() !== "" &&
-    item.id !== "undefined" &&
-    item.id !== "null" &&
-    typeof item.title === "string" &&
-    item.title.trim() !== "" &&
-    typeof item.imageUrl === "string" &&
-    item.imageUrl.trim() !== ""
-  );
 }
 
 function GlobeIcon() {
@@ -74,17 +53,17 @@ function ChevronDownIcon() {
 function BookmarkIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="15"
+      height="15"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+      <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" />
     </svg>
   );
 }
@@ -95,33 +74,23 @@ function BookmarkIcon() {
  * Features:
  * - Light / Dark / Auto theme
  * - Dynamic date
- * - Saved posts
- * - Automatic cleanup of invalid saved posts
+ * - Responsive date on mobile
+ * - Responsive location text
+ * - Saved Posts dropdown
  */
 export function TopBar() {
-  const [theme, setTheme] = useState<
-    "light" | "dark" | "auto"
-  >("light");
+  const [theme, setTheme] = useState<Theme>("light");
+  const [currentDate, setCurrentDate] = useState("");
+  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
+  const [savedOpen, setSavedOpen] = useState(false);
 
-  const [currentDate, setCurrentDate] =
-    useState("");
-
-  const [savedPosts, setSavedPosts] = useState<
-    SavedPost[]
-  >([]);
-
-  const [savedOpen, setSavedOpen] =
-    useState(false);
-
-  const savedRef =
-    useRef<HTMLDivElement>(null);
-
-  /**
-   * Apply theme.
+  /*
+   * ------------------------------------------------------------
+   * THEME
+   * ------------------------------------------------------------
    */
-  function applyTheme(
-    selectedTheme: "light" | "dark" | "auto",
-  ) {
+
+  function applyTheme(selectedTheme: Theme) {
     const root = document.documentElement;
 
     if (selectedTheme === "dark") {
@@ -133,19 +102,12 @@ export function TopBar() {
         "(prefers-color-scheme: dark)",
       ).matches;
 
-      root.classList.toggle(
-        "dark",
-        prefersDark,
-      );
+      root.classList.toggle("dark", prefersDark);
     }
   }
 
-  /**
-   * Load saved theme.
-   */
   useEffect(() => {
-    const savedTheme =
-      localStorage.getItem("skew-theme");
+    const savedTheme = localStorage.getItem("skew-theme");
 
     if (
       savedTheme === "light" ||
@@ -159,40 +121,33 @@ export function TopBar() {
     }
   }, []);
 
-  /**
-   * Change theme.
-   */
-  function handleThemeChange(
-    selectedTheme: "light" | "dark" | "auto",
-  ) {
+  function handleThemeChange(selectedTheme: Theme) {
     setTheme(selectedTheme);
-
-    localStorage.setItem(
-      "skew-theme",
-      selectedTheme,
-    );
-
+    localStorage.setItem("skew-theme", selectedTheme);
     applyTheme(selectedTheme);
   }
 
-  /**
-   * Dynamic date.
+  /*
+   * ------------------------------------------------------------
+   * DATE
+   * ------------------------------------------------------------
    */
+
   useEffect(() => {
     function updateDate() {
-      const formattedDate =
-        new Intl.DateTimeFormat("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }).format(new Date());
+      const formattedDate = new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date());
 
       setCurrentDate(formattedDate);
     }
 
     updateDate();
 
+    // Check every minute so the date changes automatically at midnight.
     const interval = setInterval(
       updateDate,
       60 * 1000,
@@ -201,120 +156,115 @@ export function TopBar() {
     return () => clearInterval(interval);
   }, []);
 
-  /**
-   * Load and clean saved posts.
+  /*
+   * ------------------------------------------------------------
+   * SAVED POSTS
+   * ------------------------------------------------------------
    */
-  useEffect(() => {
-    function loadSavedPosts() {
-      try {
-        const raw = localStorage.getItem(
-          SAVED_POSTS_KEY,
-        );
 
-        // Nothing has ever been saved.
-        if (!raw) {
-          setSavedPosts([]);
-          return;
-        }
+  function loadSavedPosts() {
+    try {
+      const stored = localStorage.getItem(
+        "skew-saved-posts",
+      );
 
-        const parsed: unknown = JSON.parse(raw);
-
-        // Invalid storage format.
-        if (!Array.isArray(parsed)) {
-          localStorage.removeItem(
-            SAVED_POSTS_KEY,
-          );
-
-          setSavedPosts([]);
-          return;
-        }
-
-        // Keep ONLY valid saved articles.
-        const validPosts = parsed.filter(
-          isValidSavedPost,
-        );
-
-        // Clean corrupted/blank old data.
-        if (
-          validPosts.length !== parsed.length
-        ) {
-          if (validPosts.length === 0) {
-            localStorage.removeItem(
-              SAVED_POSTS_KEY,
-            );
-          } else {
-            localStorage.setItem(
-              SAVED_POSTS_KEY,
-              JSON.stringify(validPosts),
-            );
-          }
-        }
-
-        setSavedPosts(validPosts);
-      } catch {
-        localStorage.removeItem(
-          SAVED_POSTS_KEY,
-        );
-
+      if (!stored) {
         setSavedPosts([]);
+        return;
+      }
+
+      const parsed = JSON.parse(stored);
+
+      if (!Array.isArray(parsed)) {
+        setSavedPosts([]);
+        return;
+      }
+
+      /*
+       * Remove invalid / blank saved entries.
+       */
+      const validPosts = parsed.filter(
+        (post): post is SavedPost =>
+          post &&
+          typeof post === "object" &&
+          typeof post.id === "string" &&
+          post.id.trim() !== "" &&
+          typeof post.title === "string" &&
+          post.title.trim() !== "",
+      );
+
+      setSavedPosts(validPosts);
+    } catch {
+      setSavedPosts([]);
+    }
+  }
+
+  useEffect(() => {
+    loadSavedPosts();
+
+    /*
+     * Update when another tab changes localStorage.
+     */
+    function handleStorage(event: StorageEvent) {
+      if (event.key === "skew-saved-posts") {
+        loadSavedPosts();
       }
     }
 
-    // Load immediately.
-    loadSavedPosts();
+    /*
+     * Update immediately when the bookmark component
+     * dispatches this custom event.
+     */
+    function handleSavedPostsChanged() {
+      loadSavedPosts();
+    }
 
-    // Update when NewsCard saves/unsaves.
     window.addEventListener(
-      "skew-saved-posts-updated",
-      loadSavedPosts,
+      "storage",
+      handleStorage,
+    );
+
+    window.addEventListener(
+      "saved-posts-changed",
+      handleSavedPostsChanged,
     );
 
     return () => {
       window.removeEventListener(
-        "skew-saved-posts-updated",
-        loadSavedPosts,
+        "storage",
+        handleStorage,
+      );
+
+      window.removeEventListener(
+        "saved-posts-changed",
+        handleSavedPostsChanged,
       );
     };
   }, []);
 
-  /**
-   * Close dropdown when clicking outside.
+  /*
+   * ------------------------------------------------------------
+   * RENDER
+   * ------------------------------------------------------------
    */
-  useEffect(() => {
-    function handleOutsideClick(
-      event: MouseEvent,
-    ) {
-      const target = event.target as Node;
-
-      if (
-        savedRef.current &&
-        !savedRef.current.contains(target)
-      ) {
-        setSavedOpen(false);
-      }
-    }
-
-    document.addEventListener(
-      "mousedown",
-      handleOutsideClick,
-    );
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleOutsideClick,
-      );
-    };
-  }, []);
 
   return (
     <div className="w-full bg-topbar-bg text-text-secondary">
-      <div className="mx-auto flex h-10 max-w-(--container-app) items-center justify-between px-6 text-caption">
+      <div className="mx-auto flex h-10 max-w-(--container-app) items-center justify-between px-4 sm:px-6 text-caption">
 
-        {/* LEFT */}
-        <div className="flex min-w-0 items-center gap-5">
+        {/* ======================================================
+            LEFT SIDE
+           ====================================================== */}
 
-          <span className="hover:text-white">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+
+          {/* Browser Extension */}
+          <span className="hidden sm:inline hover:text-white">
+            Browser Extension
+          </span>
+
+          {/* Mobile label */}
+          <span className="inline sm:hidden hover:text-white">
             Browser Extension
           </span>
 
@@ -366,50 +316,69 @@ export function TopBar() {
           </span>
         </div>
 
-        {/* RIGHT */}
-        <div className="flex min-w-0 items-center gap-4">
+        {/* ======================================================
+            RIGHT SIDE
+           ====================================================== */}
 
-          {/* Date */}
-          <span className="hidden lg:inline">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+
+          {/* Full date on desktop */}
+          <span className="hidden lg:inline whitespace-nowrap">
             {currentDate}
           </span>
 
-          <span className="hidden text-border lg:inline">
+          {/* Short date on mobile/tablet */}
+          <span className="inline lg:hidden whitespace-nowrap">
+            {currentDate
+              ? new Intl.DateTimeFormat("en-US", {
+                  month: "short",
+                  day: "numeric",
+                }).format(new Date())
+              : ""}
+          </span>
+
+          <span className="text-border">
             |
           </span>
 
           {/* Location */}
-          <span className="hidden hover:text-white sm:inline">
-            Set Location
+          <span className="whitespace-nowrap hover:text-white">
+            <span className="hidden sm:inline">
+              Set Location
+            </span>
+
+            <span className="inline sm:hidden">
+              Location
+            </span>
           </span>
 
-          <span className="hidden text-border sm:inline">
+          <span className="hidden sm:inline text-border">
             |
           </span>
 
-          {/* SAVED */}
-          <div
-            ref={savedRef}
-            className="relative shrink-0"
-          >
+          {/* ==================================================
+              SAVED POSTS
+             ================================================== */}
+
+          <div className="relative">
+
             <button
               type="button"
               onClick={() =>
-                setSavedOpen(
-                  (open) => !open,
-                )
+                setSavedOpen((current) => !current)
               }
-              className="flex items-center gap-1.5 hover:text-white"
+              className="flex items-center gap-1.5 whitespace-nowrap hover:text-white"
               aria-expanded={savedOpen}
-              aria-haspopup="menu"
+              aria-label="Saved posts"
             >
               <BookmarkIcon />
 
-              <span>Saved</span>
+              <span className="hidden sm:inline">
+                Saved
+              </span>
 
-              {/* Show count ONLY when there are valid saved posts */}
               {savedPosts.length > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-semibold text-black">
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-black">
                   {savedPosts.length}
                 </span>
               )}
@@ -417,84 +386,89 @@ export function TopBar() {
               <ChevronDownIcon />
             </button>
 
-            {/* DROPDOWN */}
+            {/* ==================================================
+                SAVED POSTS DROPDOWN
+               ================================================== */}
+
             {savedOpen && (
-              <div className="absolute right-0 top-7 z-50 w-80 overflow-hidden rounded-lg border border-border bg-bg-primary text-text-primary shadow-lg">
+              <div className="absolute right-0 top-7 z-50 w-[280px] overflow-hidden rounded-lg border border-border bg-bg-primary shadow-lg">
 
                 {/* Header */}
                 <div className="border-b border-border px-4 py-3">
-                  <p className="text-body-sm font-semibold">
+                  <h3 className="text-body-md font-semibold text-text-primary">
                     Saved Posts
-                  </p>
+                  </h3>
 
                   <p className="mt-1 text-caption text-text-secondary">
                     Articles you saved to read later.
                   </p>
                 </div>
 
-                {/* EMPTY STATE */}
+                {/* Empty state */}
                 {savedPosts.length === 0 ? (
                   <div className="px-4 py-8 text-center">
+                    <BookmarkIcon />
 
-                    <div className="mb-3 flex justify-center text-text-secondary">
-                      <BookmarkIcon />
-                    </div>
-
-                    <p className="text-body-sm font-medium">
-                      No saved posts yet
+                    <p className="mt-2 text-body-sm text-text-secondary">
+                      No saved posts yet.
                     </p>
 
                     <p className="mt-1 text-caption text-text-secondary">
-                      Click the bookmark icon on an
-                      article to save it.
+                      Bookmark an article to save it here.
                     </p>
                   </div>
                 ) : (
-                  /* SAVED POSTS */
-                  <div className="max-h-96 overflow-y-auto">
-                    {savedPosts.map(
-                      (post) => (
-                        <Link
-                          key={post.id}
-                          href={`/news/${post.id}`}
-                          onClick={() =>
-                            setSavedOpen(false)
-                          }
-                          className="flex gap-3 border-b border-border p-3 transition hover:bg-bg-secondary"
-                        >
-                          {/* Image */}
-                          <div className="h-16 w-20 shrink-0 overflow-hidden rounded-md bg-surface">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <div className="max-h-[360px] overflow-y-auto">
+
+                    {savedPosts.map((post) => (
+                      <Link
+                        key={post.id}
+                        href={`/news/${post.id}`}
+                        onClick={() =>
+                          setSavedOpen(false)
+                        }
+                        className="flex gap-3 border-b border-border p-3 transition hover:bg-surface"
+                      >
+                        {/* Image */}
+                        <div className="h-16 w-20 shrink-0 overflow-hidden rounded-md bg-surface">
+
+                          {post.imageUrl ? (
                             <img
                               src={post.imageUrl}
                               alt=""
                               className="h-full w-full object-cover"
                             />
-                          </div>
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-text-secondary">
+                              <BookmarkIcon />
+                            </div>
+                          )}
 
-                          {/* Information */}
-                          <div className="min-w-0">
-                            <p className="line-clamp-2 text-body-sm font-medium">
-                              {post.title}
+                        </div>
+
+                        {/* Content */}
+                        <div className="min-w-0">
+
+                          <p className="line-clamp-2 text-body-sm font-medium text-text-primary">
+                            {post.title}
+                          </p>
+
+                          {(post.source ||
+                            post.publishedDate) && (
+                            <p className="mt-1 line-clamp-1 text-caption text-text-secondary">
+                              {[
+                                post.source,
+                                post.publishedDate,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </p>
+                          )}
 
-                            {(post.source ||
-                              post.publishedDate) && (
-                              <p className="mt-1 truncate text-caption text-text-secondary">
-                                {[
-                                  post.source,
-                                  post.publishedDate,
-                                ]
-                                  .filter(Boolean)
-                                  .join(
-                                    " · ",
-                                  )}
-                              </p>
-                            )}
-                          </div>
-                        </Link>
-                      ),
-                    )}
+                        </div>
+                      </Link>
+                    ))}
+
                   </div>
                 )}
               </div>
