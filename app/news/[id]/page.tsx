@@ -50,13 +50,14 @@ const NewsDetailPage = async ({ params }: NewsDetailPageProps) => {
           {/* Article column */}
           <article className="flex flex-col gap-6">
             <ArticleHeader
-              title={article.title}
-              category={article.category}
-              country={article.country}
-              author={article.author}
-              publishedDate={article.publishedDate}
-              readTime={article.readTime}
-            />
+  title={article.title}
+  category={article.category}
+  country={article.country}
+  author={article.author}
+  publishedDate={article.publishedDate}
+  readTime={article.readTime}
+  imageUrl={article.imageUrl}
+/>
             <ArticleHero
               imageUrl={article.imageUrl}
               caption={article.imageCaption}

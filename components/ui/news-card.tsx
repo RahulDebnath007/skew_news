@@ -8,11 +8,12 @@ import { BiasMeter } from "@/components/ui/bias-meter";
 import type { NewsArticleCard } from "@/lib/types";
 
 const SAVED_POSTS_KEY = "skew-saved-posts";
+const SAVED_UPDATED_EVENT = "skew-saved-posts-updated";
 
 interface SavedPost {
   id: string;
   title: string;
-  imageUrl: string;
+  imageUrl?: string;
   source?: string;
   publishedDate?: string;
 }
@@ -77,15 +78,18 @@ function isValidSavedPost(post: unknown): post is SavedPost {
 
   const item = post as Partial<SavedPost>;
 
+  /*
+   * IMPORTANT:
+   * imageUrl is optional because articles saved from
+   * the ArticleHeader may not contain an imageUrl.
+   */
   return (
     typeof item.id === "string" &&
     item.id.trim() !== "" &&
     item.id !== "undefined" &&
     item.id !== "null" &&
     typeof item.title === "string" &&
-    item.title.trim() !== "" &&
-    typeof item.imageUrl === "string" &&
-    item.imageUrl.trim() !== ""
+    item.title.trim() !== ""
   );
 }
 
@@ -127,14 +131,11 @@ export function NewsCard({
   ].filter(Boolean);
 
   /**
-   * Load this article's saved state.
-   * Also cleans old/invalid saved data.
+   * Read the current saved state from localStorage.
    */
-  useEffect(() => {
+  function syncSavedState(): void {
     try {
-      const raw = localStorage.getItem(
-        SAVED_POSTS_KEY,
-      );
+      const raw = localStorage.getItem(SAVED_POSTS_KEY);
 
       if (!raw) {
         setIsSaved(false);
@@ -144,22 +145,11 @@ export function NewsCard({
       const parsed: unknown = JSON.parse(raw);
 
       if (!Array.isArray(parsed)) {
-        localStorage.removeItem(SAVED_POSTS_KEY);
         setIsSaved(false);
         return;
       }
 
-      const validPosts = parsed.filter(
-        isValidSavedPost,
-      );
-
-      // Automatically remove old blank/corrupted entries.
-      if (validPosts.length !== parsed.length) {
-        localStorage.setItem(
-          SAVED_POSTS_KEY,
-          JSON.stringify(validPosts),
-        );
-      }
+      const validPosts = parsed.filter(isValidSavedPost);
 
       setIsSaved(
         validPosts.some(
@@ -167,15 +157,42 @@ export function NewsCard({
         ),
       );
     } catch {
-      localStorage.removeItem(SAVED_POSTS_KEY);
       setIsSaved(false);
     }
+  }
+
+  /**
+   * Initial saved-state check.
+   *
+   * Also listens for saves/unsaves performed from:
+   * - ArticleHeader
+   * - TopBar
+   * - another NewsCard
+   */
+  useEffect(() => {
+    syncSavedState();
+
+    function handleSavedPostsUpdated(): void {
+      syncSavedState();
+    }
+
+    window.addEventListener(
+      SAVED_UPDATED_EVENT,
+      handleSavedPostsUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        SAVED_UPDATED_EVENT,
+        handleSavedPostsUpdated,
+      );
+    };
   }, [id]);
 
   /**
    * Track article click.
    */
-  function handleClick() {
+  function handleClick(): void {
     posthog.capture("article_clicked", {
       article_id: id,
       category,
@@ -191,7 +208,7 @@ export function NewsCard({
    */
   function handleSave(
     event: React.MouseEvent<HTMLButtonElement>,
-  ) {
+  ): void {
     event.preventDefault();
     event.stopPropagation();
 
@@ -210,7 +227,12 @@ export function NewsCard({
         }
       }
 
-      // Only keep valid saved posts.
+      /*
+       * Keep all valid saved posts.
+       *
+       * imageUrl is optional so that posts saved from
+       * ArticleHeader are preserved.
+       */
       const savedPosts: SavedPost[] =
         Array.isArray(parsed)
           ? parsed.filter(isValidSavedPost)
@@ -225,7 +247,9 @@ export function NewsCard({
       let updatedPosts: SavedPost[];
 
       if (alreadySaved) {
-        // Remove article.
+        /*
+         * UNSAVE
+         */
         updatedPosts = savedPosts.filter(
           (post) => post.id !== articleId,
         );
@@ -236,7 +260,9 @@ export function NewsCard({
           article_id: id,
         });
       } else {
-        // Save article.
+        /*
+         * SAVE
+         */
         const newPost: SavedPost = {
           id: articleId,
           title,
@@ -258,14 +284,19 @@ export function NewsCard({
         });
       }
 
+      /*
+       * Save the updated list.
+       */
       localStorage.setItem(
         SAVED_POSTS_KEY,
         JSON.stringify(updatedPosts),
       );
 
-      // Tell TopBar to refresh immediately.
+      /*
+       * Notify every component that uses saved posts.
+       */
       window.dispatchEvent(
-        new Event("skew-saved-posts-updated"),
+        new Event(SAVED_UPDATED_EVENT),
       );
     } catch (error) {
       console.error(

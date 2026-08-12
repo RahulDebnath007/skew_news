@@ -15,6 +15,7 @@ interface ArticleHeaderProps {
   author: string;
   publishedDate: string;
   readTime: string;
+  imageUrl?: string;
 }
 
 interface SavedPost {
@@ -44,15 +45,26 @@ function ActionButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-text-secondary hover:text-text-primary"
+      className="inline-flex items-center gap-1.5 text-text-secondary transition-colors hover:text-text-primary"
     >
       {children}
-      {showLabel && <span className="text-body-sm">{label}</span>}
+
+      {showLabel && (
+        <span className="text-body-sm">
+          {label}
+        </span>
+      )}
     </button>
   );
 }
 
-/** Breadcrumb, title, and byline row with functional save/share actions. */
+/**
+ * Breadcrumb, title, byline and article actions.
+ *
+ * Save state is synchronized through localStorage and the
+ * custom "skew-saved-posts-updated" browser event so that
+ * TopBar, Home cards and Article pages can stay in sync.
+ */
 export function ArticleHeader({
   title,
   category,
@@ -60,26 +72,34 @@ export function ArticleHeader({
   author,
   publishedDate,
   readTime,
+  imageUrl,
 }: ArticleHeaderProps) {
   const pathname = usePathname();
 
   const [isSaved, setIsSaved] = useState(false);
 
   /*
-   * The article ID is already present in the news detail URL:
+   * The article id is taken from:
+   *
    * /news/[article-id]
    */
   const articleId =
     pathname?.split("/").filter(Boolean).pop() ?? "";
 
   /*
-   * Check whether this article is already saved.
+   * Check whether the current article exists
+   * inside the saved-posts localStorage array.
    */
-  useEffect(() => {
-    if (!articleId) return;
+  function checkSavedStatus(): void {
+    if (!articleId) {
+      setIsSaved(false);
+      return;
+    }
 
     try {
-      const raw = localStorage.getItem(SAVED_STORAGE_KEY);
+      const raw = localStorage.getItem(
+        SAVED_STORAGE_KEY,
+      );
 
       if (!raw) {
         setIsSaved(false);
@@ -102,22 +122,50 @@ export function ArticleHeader({
       );
 
       setIsSaved(alreadySaved);
-    } catch {
+    } catch (error) {
+      console.error(
+        "Failed to check saved article status:",
+        error,
+      );
+
       setIsSaved(false);
     }
+  }
+
+  /*
+   * Initial saved-state check + synchronization.
+   *
+   * This is important because another component may save
+   * or unsave the same article while this page is open.
+   */
+  useEffect(() => {
+    if (!articleId) return;
+
+    checkSavedStatus();
+
+    window.addEventListener(
+      SAVED_UPDATED_EVENT,
+      checkSavedStatus,
+    );
+
+    return () => {
+      window.removeEventListener(
+        SAVED_UPDATED_EVENT,
+        checkSavedStatus,
+      );
+    };
   }, [articleId]);
 
   /*
    * Save / unsave the current article.
-   *
-   * This uses the exact same localStorage key and custom event
-   * that TopBar already uses.
    */
   function handleSave(): void {
     if (!articleId) return;
 
     try {
-      const raw = localStorage.getItem(SAVED_STORAGE_KEY);
+      const raw = localStorage.getItem(
+        SAVED_STORAGE_KEY,
+      );
 
       let savedPosts: SavedPost[] = [];
 
@@ -130,7 +178,8 @@ export function ArticleHeader({
               !!post &&
               typeof post === "object" &&
               "id" in post &&
-              typeof (post as { id?: unknown }).id === "string",
+              typeof (post as { id?: unknown }).id ===
+                "string",
           );
         }
       }
@@ -153,24 +202,35 @@ export function ArticleHeader({
          * SAVE
          */
         const newPost: SavedPost = {
-          id: articleId,
-          title,
-          source: category,
-          publishedDate,
-        };
+  id: articleId,
+  title,
+  imageUrl: imageUrl || "",
+  source: category,
+  publishedDate,
+};
 
-        savedPosts = [newPost, ...savedPosts];
+        savedPosts = [
+          newPost,
+          ...savedPosts,
+        ];
 
         setIsSaved(true);
       }
 
+      /*
+       * Persist the new saved state.
+       */
       localStorage.setItem(
         SAVED_STORAGE_KEY,
         JSON.stringify(savedPosts),
       );
 
       /*
-       * Tell TopBar to immediately refresh its saved count.
+       * Notify every interested component:
+       *
+       * - TopBar
+       * - Home cards
+       * - Article pages
        */
       window.dispatchEvent(
         new Event(SAVED_UPDATED_EVENT),
@@ -185,24 +245,42 @@ export function ArticleHeader({
 
   return (
     <header className="flex flex-col gap-4">
+      {/* Breadcrumb */}
       <p className="text-caption text-text-secondary">
-        {category} <span className="mx-1">·</span> {country}
+        {category}
+
+        <span className="mx-1">
+          ·
+        </span>
+
+        {country}
       </p>
 
+      {/* Article title */}
       <h1 className="text-h1 text-text-primary">
         {title}
       </h1>
 
+      {/* Byline + actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-body-sm text-text-secondary">
-          By {author}{" "}
-          <span className="mx-1.5 text-border">|</span>{" "}
-          {publishedDate}{" "}
-          <span className="mx-1.5 text-border">|</span>{" "}
+          By {author}
+
+          <span className="mx-1.5 text-border">
+            |
+          </span>
+
+          {publishedDate}
+
+          <span className="mx-1.5 text-border">
+            |
+          </span>
+
           {readTime}
         </p>
 
         <div className="flex items-center gap-4">
+          {/* Save / Unsave */}
           <ActionButton
             label={isSaved ? "Unsave" : "Save"}
             showLabel
@@ -211,6 +289,7 @@ export function ArticleHeader({
             <BookmarkIcon />
           </ActionButton>
 
+          {/* Share */}
           <ActionButton
             label="Share"
             showLabel
@@ -218,6 +297,7 @@ export function ArticleHeader({
             <ShareIcon />
           </ActionButton>
 
+          {/* More options */}
           <ActionButton label="More options">
             <MoreIcon />
           </ActionButton>
