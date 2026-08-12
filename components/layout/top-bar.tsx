@@ -5,30 +5,49 @@ import { useEffect, useRef, useState } from "react";
 
 type Theme = "light" | "dark" | "auto";
 
-type SavedPost = {
-  id: string;
-  title: string;
-  imageUrl: string;
-  source: string;
-  publishedDate: string;
-};
-
-type LocationResult = {
+interface LocationResult {
+  place_id: number;
   display_name: string;
   lat: string;
   lon: string;
-  type?: string;
   address?: {
     city?: string;
     town?: string;
     village?: string;
+    municipality?: string;
     state?: string;
     country?: string;
   };
-};
+}
 
-const SAVED_POSTS_KEY = "skew-saved-posts";
-const LOCATION_KEY = "skew-location";
+interface SavedPost {
+  id: string;
+  title: string;
+  imageUrl?: string;
+  source?: string;
+  publishedDate?: string;
+}
+
+function GlobeIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a15 15 0 0 1 0 18" />
+      <path d="M12 3a15 15 0 0 0 0 18" />
+    </svg>
+  );
+}
 
 function ChevronDownIcon() {
   return (
@@ -48,20 +67,20 @@ function ChevronDownIcon() {
   );
 }
 
-function BookmarkIcon({ filled = false }: { filled?: boolean }) {
+function ChevronRightIcon() {
   return (
     <svg
-      width="15"
-      height="15"
+      width="12"
+      height="12"
       viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
+      fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" />
+      <path d="m9 6 6 6-6 6" />
     </svg>
   );
 }
@@ -69,8 +88,8 @@ function BookmarkIcon({ filled = false }: { filled?: boolean }) {
 function SearchIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -85,11 +104,11 @@ function SearchIcon() {
   );
 }
 
-function CloseIcon() {
+function XIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -98,66 +117,69 @@ function CloseIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="m6 6 12 12M18 6 6 18" />
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
+function BookmarkIcon({ filled = false }: { filled?: boolean }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" />
     </svg>
   );
 }
 
 /**
- * Top utility bar.
+ * Full-width utility bar.
  *
- * Desktop:
- * Theme: Light Dark Auto | Date | Set Location | Saved
- *
- * Mobile:
- * Theme | Date | Set Location | Saved
+ * Features:
+ * - Light / Dark / Auto theme
+ * - Responsive theme control
+ * - Dynamic date
+ * - Searchable location selector
+ * - Saved posts dropdown
+ * - Saved count only appears when count > 0
  */
 export function TopBar() {
-  /* -------------------------------------------------------------------------- */
-  /* Theme                                                                       */
-  /* -------------------------------------------------------------------------- */
-
   const [theme, setTheme] = useState<Theme>("light");
-  const [themeOpen, setThemeOpen] = useState(false);
-
-  /* -------------------------------------------------------------------------- */
-  /* Date                                                                        */
-  /* -------------------------------------------------------------------------- */
 
   const [currentDate, setCurrentDate] = useState("");
 
-  /* -------------------------------------------------------------------------- */
-  /* Location                                                                    */
-  /* -------------------------------------------------------------------------- */
-
   const [locationOpen, setLocationOpen] = useState(false);
-  const [locationSearch, setLocationSearch] = useState("");
-  const [locationResults, setLocationResults] = useState<
-    LocationResult[]
-  >([]);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationResults, setLocationResults] = useState<LocationResult[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("");
 
-  /* -------------------------------------------------------------------------- */
-  /* Saved posts                                                                 */
-  /* -------------------------------------------------------------------------- */
+  const [themeOpen, setThemeOpen] = useState(false);
 
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
 
-  /* -------------------------------------------------------------------------- */
-  /* Refs                                                                        */
-  /* -------------------------------------------------------------------------- */
-
-  const themeRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
+  const themeRef = useRef<HTMLDivElement>(null);
   const savedRef = useRef<HTMLDivElement>(null);
 
-  /* -------------------------------------------------------------------------- */
-  /* Theme                                                                       */
-  /* -------------------------------------------------------------------------- */
+  const THEME_STORAGE_KEY = "skew-theme";
+  const LOCATION_STORAGE_KEY = "skew-location";
+  const SAVED_STORAGE_KEY = "skew-saved-posts";
 
-  function applyTheme(selectedTheme: Theme) {
+  /**
+   * Apply theme to document.
+   */
+  function applyTheme(selectedTheme: Theme): void {
     const root = document.documentElement;
 
     if (selectedTheme === "dark") {
@@ -177,20 +199,11 @@ export function TopBar() {
     root.classList.toggle("dark", prefersDark);
   }
 
-  function handleThemeChange(selectedTheme: Theme) {
-    setTheme(selectedTheme);
-
-    localStorage.setItem(
-      "skew-theme",
-      selectedTheme,
-    );
-
-    applyTheme(selectedTheme);
-  }
-
+  /**
+   * Load saved theme and location.
+   */
   useEffect(() => {
-    const savedTheme =
-      localStorage.getItem("skew-theme");
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 
     if (
       savedTheme === "light" ||
@@ -200,300 +213,251 @@ export function TopBar() {
       setTheme(savedTheme);
       applyTheme(savedTheme);
     } else {
+      setTheme("light");
       applyTheme("light");
     }
-  }, []);
 
-  useEffect(() => {
-    if (theme !== "auto") return;
-
-    const mediaQuery = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    );
-
-    const handleChange = () => {
-      applyTheme("auto");
-    };
-
-    mediaQuery.addEventListener(
-      "change",
-      handleChange,
-    );
-
-    return () => {
-      mediaQuery.removeEventListener(
-        "change",
-        handleChange,
-      );
-    };
-  }, [theme]);
-
-  /* -------------------------------------------------------------------------- */
-  /* Date                                                                        */
-  /* -------------------------------------------------------------------------- */
-
-  useEffect(() => {
-    function updateDate() {
-      const formattedDate =
-        new Intl.DateTimeFormat("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }).format(new Date());
-
-      setCurrentDate(formattedDate);
-    }
-
-    updateDate();
-
-    const interval = window.setInterval(
-      updateDate,
-      60 * 1000,
-    );
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, []);
-
-  const mobileDate = currentDate
-    ? new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }).format(new Date())
-    : "";
-
-  /* -------------------------------------------------------------------------- */
-  /* Saved location                                                              */
-  /* -------------------------------------------------------------------------- */
-
-  useEffect(() => {
-    const savedLocation =
-      localStorage.getItem(LOCATION_KEY);
+    const savedLocation = localStorage.getItem(LOCATION_STORAGE_KEY);
 
     if (savedLocation) {
       setSelectedLocation(savedLocation);
     }
   }, []);
 
-  /* -------------------------------------------------------------------------- */
-  /* Saved posts                                                                 */
-  /* -------------------------------------------------------------------------- */
+  /**
+   * Update date.
+   *
+   * Desktop:
+   * Wednesday, August 12, 2026
+   *
+   * Mobile:
+   * Aug 12, 2026
+   */
+  useEffect(() => {
+    function updateDate(): void {
+      const isMobile = window.innerWidth < 640;
 
-  function loadSavedPosts() {
+      const formattedDate = new Intl.DateTimeFormat("en-US", {
+        weekday: isMobile ? undefined : "long",
+        month: isMobile ? "short" : "long",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date());
+
+      setCurrentDate(formattedDate);
+    }
+
+    updateDate();
+
+    const interval = window.setInterval(updateDate, 60 * 1000);
+
+    window.addEventListener("resize", updateDate);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("resize", updateDate);
+    };
+  }, []);
+
+  /**
+   * Theme change.
+   */
+  function handleThemeChange(selectedTheme: Theme): void {
+    setTheme(selectedTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+    applyTheme(selectedTheme);
+    setThemeOpen(false);
+  }
+
+  /**
+   * Load saved posts from localStorage.
+   */
+  function loadSavedPosts(): void {
     try {
-      const raw =
-        localStorage.getItem(
-          SAVED_POSTS_KEY,
-        );
+      const raw = localStorage.getItem(SAVED_STORAGE_KEY);
 
       if (!raw) {
         setSavedPosts([]);
         return;
       }
 
-      const parsed: unknown =
-        JSON.parse(raw);
+      const parsed: unknown = JSON.parse(raw);
 
       if (!Array.isArray(parsed)) {
         setSavedPosts([]);
         return;
       }
 
-      setSavedPosts(
-        parsed as SavedPost[],
+      const validPosts: SavedPost[] = parsed.filter(
+        (post: unknown): post is SavedPost => {
+          if (!post || typeof post !== "object") return false;
+
+          const item = post as Record<string, unknown>;
+
+          return typeof item.id === "string";
+        },
       );
+
+      setSavedPosts(validPosts);
     } catch {
       setSavedPosts([]);
     }
   }
 
+  /**
+   * Load saved posts on mount.
+   */
   useEffect(() => {
     loadSavedPosts();
 
-    function handleStorageChange(
-      event: StorageEvent,
-    ) {
-      if (
-        event.key ===
-        SAVED_POSTS_KEY
-      ) {
-        loadSavedPosts();
-      }
-    }
-
-    function handleSavedPostsChanged() {
+    function handleSavedPostsChanged(): void {
       loadSavedPosts();
     }
 
     window.addEventListener(
-      "storage",
-      handleStorageChange,
+      "skew-saved-posts-updated",
+      handleSavedPostsChanged,
     );
 
     window.addEventListener(
-      "skew-saved-posts-changed",
+      "storage",
       handleSavedPostsChanged,
+    );
+
+    /*
+     * This small polling fallback makes the counter update even if
+     * another component changes localStorage without dispatching
+     * a custom event.
+     */
+    const interval = window.setInterval(
+      loadSavedPosts,
+      500,
     );
 
     return () => {
       window.removeEventListener(
-        "storage",
-        handleStorageChange,
+        "skew-saved-posts-updated",
+        handleSavedPostsChanged,
       );
 
       window.removeEventListener(
-        "skew-saved-posts-changed",
+        "storage",
         handleSavedPostsChanged,
       );
+
+      window.clearInterval(interval);
     };
   }, []);
 
-  /* -------------------------------------------------------------------------- */
-  /* Location search                                                             */
-  /* -------------------------------------------------------------------------- */
-
+  /**
+   * Search arbitrary locations.
+   *
+   * Uses OpenStreetMap Nominatim so the user is not restricted
+   * to a predefined list of cities.
+   */
   useEffect(() => {
     if (!locationOpen) return;
 
-    const query =
-      locationSearch.trim();
+    const query = locationQuery.trim();
 
-    if (!query) {
+    if (query.length < 2) {
       setLocationResults([]);
       return;
     }
 
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    const timeout =
-      window.setTimeout(
-        async () => {
-          try {
-            setLocationLoading(true);
+    const timeout = window.setTimeout(async () => {
+      try {
+        setLocationLoading(true);
 
-            const response =
-              await fetch(
-                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&q=${encodeURIComponent(
-                  query,
-                )}`,
-                {
-                  signal:
-                    controller.signal,
-                  headers: {
-                    Accept:
-                      "application/json",
-                  },
-                },
-              );
+        const url =
+          "https://nominatim.openstreetmap.org/search?" +
+          new URLSearchParams({
+            q: query,
+            format: "json",
+            addressdetails: "1",
+            limit: "6",
+          }).toString();
 
-            if (!response.ok) {
-              throw new Error(
-                "Location search failed",
-              );
-            }
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            Accept: "application/json",
+          },
+        });
 
-            const data =
-              (await response.json()) as LocationResult[];
+        if (!response.ok) {
+          throw new Error("Location search failed");
+        }
 
-            setLocationResults(
-              data,
-            );
-          } catch (error) {
-            if (
-              error instanceof Error &&
-              error.name ===
-                "AbortError"
-            ) {
-              return;
-            }
+        const data: LocationResult[] = await response.json();
 
-            setLocationResults([]);
-          } finally {
-            setLocationLoading(
-              false,
-            );
-          }
-        },
-        350,
-      );
+        setLocationResults(data);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setLocationResults([]);
+        }
+      } finally {
+        setLocationLoading(false);
+      }
+    }, 350);
 
     return () => {
-      window.clearTimeout(
-        timeout,
-      );
-
+      window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [
-    locationSearch,
-    locationOpen,
-  ]);
+  }, [locationQuery, locationOpen]);
 
-  /* -------------------------------------------------------------------------- */
-  /* Select location                                                             */
-  /* -------------------------------------------------------------------------- */
-
+  /**
+   * Select a location.
+   */
   function handleLocationSelect(
     location: LocationResult,
-  ) {
-    const name =
+  ): void {
+    const city =
       location.address?.city ||
       location.address?.town ||
       location.address?.village ||
-      location.display_name.split(
-        ",",
-      )[0];
+      location.address?.municipality ||
+      location.display_name.split(",")[0];
 
-    setSelectedLocation(name);
+    setSelectedLocation(city);
 
     localStorage.setItem(
-      LOCATION_KEY,
-      name,
+      LOCATION_STORAGE_KEY,
+      city,
     );
 
-    setLocationSearch("");
+    setLocationQuery("");
     setLocationResults([]);
     setLocationOpen(false);
   }
 
-  /* -------------------------------------------------------------------------- */
-  /* Outside click                                                               */
-  /* -------------------------------------------------------------------------- */
-
+  /**
+   * Close dropdowns when clicking outside.
+   */
   useEffect(() => {
-    function handleOutsideClick(
-      event: MouseEvent,
-    ) {
-      const target =
-        event.target as Node;
-
-      if (
-        themeRef.current &&
-        !themeRef.current.contains(
-          target,
-        )
-      ) {
-        setThemeOpen(false);
-      }
+    function handleOutsideClick(event: MouseEvent): void {
+      const target = event.target as Node;
 
       if (
         locationRef.current &&
-        !locationRef.current.contains(
-          target,
-        )
+        !locationRef.current.contains(target)
       ) {
         setLocationOpen(false);
       }
 
       if (
+        themeRef.current &&
+        !themeRef.current.contains(target)
+      ) {
+        setThemeOpen(false);
+      }
+
+      if (
         savedRef.current &&
-        !savedRef.current.contains(
-          target,
-        )
+        !savedRef.current.contains(target)
       ) {
         setSavedOpen(false);
       }
@@ -512,68 +476,28 @@ export function TopBar() {
     };
   }, []);
 
-  /* -------------------------------------------------------------------------- */
-  /* Dropdown controls                                                           */
-  /* -------------------------------------------------------------------------- */
-
-  function toggleTheme() {
-    setThemeOpen(
-      (open) => !open,
-    );
-
-    setLocationOpen(false);
-    setSavedOpen(false);
-  }
-
-  function toggleLocation() {
-    setLocationOpen(
-      (open) => !open,
-    );
-
-    setThemeOpen(false);
-    setSavedOpen(false);
-
-    if (!locationOpen) {
-      setLocationSearch("");
-      setLocationResults([]);
-    }
-  }
-
-  function toggleSaved() {
-    loadSavedPosts();
-
-    setSavedOpen(
-      (open) => !open,
-    );
-
-    setThemeOpen(false);
-    setLocationOpen(false);
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /* Render                                                                      */
-  /* -------------------------------------------------------------------------- */
+  const savedCount = savedPosts.length;
 
   return (
-    <div className="relative z-50 w-full bg-topbar-bg text-text-secondary">
-      <div className="mx-auto flex min-h-10 max-w-(--container-app) items-center justify-between gap-3 px-4 sm:px-6">
+    <div className="w-full bg-topbar-bg text-text-secondary">
+      <div className="mx-auto flex min-h-10 max-w-(--container-app) items-center justify-between gap-3 px-4 sm:px-6 text-caption">
 
-        {/* ================================================================== */}
-        {/* LEFT SIDE                                                           */}
-        {/* ================================================================== */}
+        {/* ========================================================= */}
+        {/* LEFT SIDE — THEME                                        */}
+        {/* ========================================================= */}
 
         <div className="flex min-w-0 items-center">
-
-          {/* Desktop Theme */}
-          <div className="hidden items-center gap-2 text-caption sm:flex">
+          {/* Desktop theme */}
+          <div
+            ref={themeRef}
+            className="relative hidden sm:flex items-center gap-2"
+          >
             <span>Theme:</span>
 
             <button
               type="button"
               onClick={() =>
-                handleThemeChange(
-                  "light",
-                )
+                handleThemeChange("light")
               }
               className={
                 theme === "light"
@@ -587,9 +511,7 @@ export function TopBar() {
             <button
               type="button"
               onClick={() =>
-                handleThemeChange(
-                  "dark",
-                )
+                handleThemeChange("dark")
               }
               className={
                 theme === "dark"
@@ -603,9 +525,7 @@ export function TopBar() {
             <button
               type="button"
               onClick={() =>
-                handleThemeChange(
-                  "auto",
-                )
+                handleThemeChange("auto")
               }
               className={
                 theme === "auto"
@@ -617,91 +537,81 @@ export function TopBar() {
             </button>
           </div>
 
-          {/* Mobile Theme Dropdown */}
+          {/* Mobile theme dropdown */}
           <div
             ref={themeRef}
             className="relative sm:hidden"
           >
             <button
               type="button"
-              onClick={toggleTheme}
-              className="flex items-center gap-1 whitespace-nowrap text-caption hover:text-white"
-              aria-expanded={
-                themeOpen
+              onClick={() =>
+                setThemeOpen((open) => !open)
               }
-              aria-haspopup="menu"
+              className="flex items-center gap-1.5 whitespace-nowrap hover:text-white"
+              aria-expanded={themeOpen}
             >
-              <span>Theme</span>
+              <span>Theme:</span>
+
+              <span className="font-semibold text-white">
+                {theme === "light"
+                  ? "Light"
+                  : theme === "dark"
+                    ? "Dark"
+                    : "Auto"}
+              </span>
+
               <ChevronDownIcon />
             </button>
 
             {themeOpen && (
-              <div className="absolute left-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-md border border-border bg-bg-primary p-1 shadow-lg">
+              <div className="absolute left-0 top-full z-50 mt-2 min-w-28 overflow-hidden rounded-lg border border-border bg-bg-primary shadow-xl">
                 {(
-                  [
-                    "light",
-                    "dark",
-                    "auto",
-                  ] as Theme[]
-                ).map(
-                  (
-                    selectedTheme,
-                  ) => (
-                    <button
-                      key={
-                        selectedTheme
-                      }
-                      type="button"
-                      onClick={() => {
-                        handleThemeChange(
-                          selectedTheme,
-                        );
-
-                        setThemeOpen(
-                          false,
-                        );
-                      }}
-                      className={`block w-full rounded px-3 py-2 text-left text-caption capitalize transition ${
-                        theme ===
-                        selectedTheme
-                          ? "bg-bg-secondary font-semibold text-text-primary"
-                          : "text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
-                      }`}
-                    >
-                      {
-                        selectedTheme
-                      }
-                    </button>
-                  ),
-                )}
+                  ["light", "dark", "auto"] as Theme[]
+                ).map((option: Theme) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() =>
+                      handleThemeChange(option)
+                    }
+                    className={`block w-full px-4 py-2 text-left capitalize hover:bg-surface ${
+                      theme === option
+                        ? "font-semibold text-text-primary"
+                        : "text-text-secondary"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* ================================================================== */}
-        {/* RIGHT SIDE                                                          */}
-        {/* ================================================================== */}
+        {/* ========================================================= */}
+        {/* RIGHT SIDE                                                */}
+        {/* ========================================================= */}
 
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
 
-          {/* Desktop Date */}
-          <span className="hidden whitespace-nowrap text-caption lg:inline">
-            {currentDate}
+          {/* Date */}
+          <span className="whitespace-nowrap">
+            <span className="hidden sm:inline">
+              {currentDate}
+            </span>
+
+            <span className="sm:hidden">
+              {currentDate}
+            </span>
           </span>
 
-          {/* Mobile Date */}
-          <span className="whitespace-nowrap text-caption sm:hidden">
-            {mobileDate}
-          </span>
-
-          <span className="hidden text-border sm:inline">
+          <span className="text-border">
             |
           </span>
 
-          {/* ================================================================ */}
-          {/* LOCATION                                                          */}
-          {/* ================================================================ */}
+          {/* ===================================================== */}
+          {/* LOCATION                                              */}
+          {/* ===================================================== */}
 
           <div
             ref={locationRef}
@@ -709,152 +619,128 @@ export function TopBar() {
           >
             <button
               type="button"
-              onClick={
-                toggleLocation
+              onClick={() =>
+                setLocationOpen((open) => !open)
               }
-              className="flex items-center gap-1 whitespace-nowrap text-caption transition hover:text-white"
-              aria-expanded={
-                locationOpen
-              }
-              aria-haspopup="dialog"
+              className="flex items-center gap-1.5 whitespace-nowrap hover:text-white"
+              aria-expanded={locationOpen}
+              aria-haspopup="listbox"
             >
               <span>
-                Set Location
+                {selectedLocation
+                  ? selectedLocation
+                  : "Set Location"}
               </span>
 
               <ChevronDownIcon />
             </button>
 
             {locationOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-lg border border-border bg-bg-primary shadow-lg sm:w-80">
-
-                {/* Search */}
+              <div className="fixed left-1/2 top-[58px] z-50 w-[calc(100vw-24px)] max-w-[360px] -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-bg-primary shadow-2xl sm:absolute sm:right-0 sm:left-auto sm:top-full sm:mt-3 sm:w-[360px] sm:max-w-none sm:translate-x-0">
+                {/* Search input */}
                 <div className="border-b border-border p-3">
-                  <div className="flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
                     <SearchIcon />
 
                     <input
                       type="text"
-                      value={
-                        locationSearch
-                      }
-                      onChange={(
-                        event,
-                      ) =>
-                        setLocationSearch(
-                          event.target
-                            .value,
+                      value={locationQuery}
+                      onChange={(event) =>
+                        setLocationQuery(
+                          event.target.value,
                         )
                       }
-                      placeholder="Search any location..."
+                      placeholder="Search location..."
                       autoFocus
-                      className="min-w-0 flex-1 bg-transparent text-body-sm text-text-primary outline-none placeholder:text-text-secondary"
+                      className="min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-secondary"
                     />
 
-                    {locationSearch && (
+                    {locationQuery && (
                       <button
                         type="button"
                         onClick={() => {
-                          setLocationSearch(
-                            "",
-                          );
-
-                          setLocationResults(
-                            [],
-                          );
+                          setLocationQuery("");
+                          setLocationResults([]);
                         }}
                         className="text-text-secondary hover:text-text-primary"
                         aria-label="Clear location search"
                       >
-                        <CloseIcon />
+                        <XIcon />
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* Results */}
-                <div className="max-h-72 overflow-y-auto p-1">
-
+                {/* Search results */}
+                <div className="max-h-72 overflow-y-auto">
                   {locationLoading && (
-                    <div className="px-3 py-3 text-body-sm text-text-secondary">
-                      Searching...
+                    <div className="px-4 py-4 text-sm text-text-secondary">
+                      Searching locations...
                     </div>
                   )}
 
                   {!locationLoading &&
-                    locationSearch.trim() &&
-                    locationResults.length ===
-                      0 && (
-                      <div className="px-3 py-3 text-body-sm text-text-secondary">
-                        No locations
-                        found.
+                    locationQuery.trim().length >= 2 &&
+                    locationResults.length === 0 && (
+                      <div className="px-4 py-4 text-sm text-text-secondary">
+                        No locations found.
                       </div>
                     )}
 
-                  {!locationSearch.trim() && (
-                    <div className="px-3 py-3 text-body-sm text-text-secondary">
-                      Type a city,
-                      state, country
-                      or any place.
-                    </div>
-                  )}
-
                   {!locationLoading &&
                     locationResults.map(
-                      (
-                        location,
-                        index,
-                      ) => {
-                        const name =
-                          location
-                            .address
-                            ?.city ||
-                          location
-                            .address
-                            ?.town ||
-                          location
-                            .address
-                            ?.village ||
+                      (location: LocationResult) => {
+                        const city =
+                          location.address?.city ||
+                          location.address?.town ||
+                          location.address?.village ||
+                          location.address
+                            ?.municipality ||
                           location.display_name.split(
                             ",",
                           )[0];
 
                         return (
                           <button
-                            key={`${location.lat}-${location.lon}-${index}`}
+                            key={location.place_id}
                             type="button"
                             onClick={() =>
                               handleLocationSelect(
                                 location,
                               )
                             }
-                            className="block w-full rounded-md px-3 py-2 text-left transition hover:bg-bg-secondary"
+                            className="block w-full px-4 py-3 text-left transition hover:bg-surface"
                           >
-                            <div className="text-body-sm font-medium text-text-primary">
-                              {name}
+                            <div className="text-sm font-medium text-text-primary">
+                              {city}
                             </div>
 
-                            <div className="mt-0.5 line-clamp-2 text-caption text-text-secondary">
-                              {
-                                location.display_name
-                              }
+                            <div className="mt-0.5 line-clamp-2 text-xs text-text-secondary">
+                              {location.display_name}
                             </div>
                           </button>
                         );
                       },
                     )}
+
+                  {!locationQuery.trim() && (
+                    <div className="px-4 py-4 text-xs text-text-secondary">
+                      Search for any city, town, state,
+                      country or place.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
-          <span className="hidden text-border sm:inline">
+          <span className="text-border">
             |
           </span>
 
-          {/* ================================================================ */}
-          {/* SAVED POSTS                                                       */}
-          {/* ================================================================ */}
+          {/* ===================================================== */}
+          {/* SAVED POSTS                                           */}
+          {/* ===================================================== */}
 
           <div
             ref={savedRef}
@@ -862,32 +748,28 @@ export function TopBar() {
           >
             <button
               type="button"
-              onClick={
-                toggleSaved
+              onClick={() =>
+                setSavedOpen((open) => !open)
               }
-              className="flex items-center gap-1.5 whitespace-nowrap text-caption transition hover:text-white"
-              aria-expanded={
-                savedOpen
-              }
+              className="flex items-center gap-1.5 whitespace-nowrap hover:text-white"
+              aria-expanded={savedOpen}
               aria-haspopup="dialog"
             >
-              <BookmarkIcon
-                filled={
-                  savedPosts.length >
-                  0
-                }
-              />
+              <BookmarkIcon />
 
               <span className="hidden sm:inline">
                 Saved
               </span>
 
-              {savedPosts.length >
-                0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-semibold text-black">
-                  {
-                    savedPosts.length
-                  }
+              <span className="sm:hidden">
+                Saved
+              </span>
+
+              {/* IMPORTANT:
+                  Number appears ONLY when there are saved posts. */}
+              {savedCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[11px] font-semibold text-black">
+                  {savedCount}
                 </span>
               )}
 
@@ -895,77 +777,83 @@ export function TopBar() {
             </button>
 
             {savedOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-lg border border-border bg-bg-primary shadow-lg sm:w-96">
+              <div className="absolute right-0 top-full z-50 mt-3 w-[290px] overflow-hidden rounded-xl border border-border bg-bg-primary shadow-2xl sm:w-[370px]">
 
                 {/* Header */}
                 <div className="border-b border-border px-4 py-3">
-                  <div className="text-body-md font-semibold text-text-primary">
+                  <h3 className="font-semibold text-text-primary">
                     Saved Posts
-                  </div>
+                  </h3>
 
-                  <div className="mt-1 text-caption text-text-secondary">
-                    Articles you
-                    saved to read
-                    later.
-                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Articles you saved to read later.
+                  </p>
                 </div>
 
                 {/* Empty state */}
-                {savedPosts.length ===
-                0 ? (
-                  <div className="px-4 py-8 text-center text-body-sm text-text-secondary">
-                    No saved posts
-                    yet.
-                    <br />
-                    Bookmark an
-                    article to save
-                    it here.
+                {savedPosts.length === 0 && (
+                  <div className="px-4 py-8 text-center">
+                    <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface text-text-secondary">
+                      <BookmarkIcon />
+                    </div>
+
+                    <p className="text-sm font-medium text-text-primary">
+                      No saved posts
+                    </p>
+
+                    <p className="mt-1 text-xs text-text-secondary">
+                      Articles you bookmark will appear
+                      here.
+                    </p>
                   </div>
-                ) : (
-                  <div className="max-h-80 overflow-y-auto">
+                )}
+
+                {/* Saved posts */}
+                {savedPosts.length > 0 && (
+                  <div className="max-h-[360px] overflow-y-auto">
                     {savedPosts.map(
-                      (post) => (
+                      (post: SavedPost) => (
                         <Link
-                          key={
-                            post.id
-                          }
+                          key={post.id}
                           href={`/news/${post.id}`}
                           onClick={() =>
-                            setSavedOpen(
-                              false,
-                            )
+                            setSavedOpen(false)
                           }
-                          className="flex gap-3 border-b border-border p-3 transition last:border-b-0 hover:bg-bg-secondary"
+                          className="flex gap-3 border-b border-border p-3 transition last:border-b-0 hover:bg-surface"
                         >
                           {/* Image */}
                           <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md bg-surface">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={
-                                post.imageUrl
-                              }
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
+                            {post.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={post.imageUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-text-secondary">
+                                <BookmarkIcon />
+                              </div>
+                            )}
                           </div>
 
                           {/* Content */}
                           <div className="min-w-0">
-                            <div className="line-clamp-2 text-body-sm font-semibold text-text-primary">
-                              {
-                                post.title
-                              }
-                            </div>
+                            <p className="line-clamp-2 text-sm font-medium text-text-primary">
+                              {post.title}
+                            </p>
 
-                            <div className="mt-1 text-caption text-text-secondary">
-                              {
-                                post.source
-                              }
-
-                              {post.publishedDate
-                                ? ` · ${post.publishedDate}`
-                                : ""}
-                            </div>
+                            {(post.source ||
+                              post.publishedDate) && (
+                              <p className="mt-1 line-clamp-1 text-xs text-text-secondary">
+                                {[
+                                  post.source,
+                                  post.publishedDate,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            )}
                           </div>
                         </Link>
                       ),
