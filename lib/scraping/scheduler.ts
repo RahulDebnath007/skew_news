@@ -210,14 +210,36 @@ export async function setScheduleState(
 export async function getJobResultHtml(jobId: string): Promise<string | null> {
   const { text } = await requestRaw(`/v1/queries/${jobId}/results`);
 
+  console.info(
+    `[oxylabs] job ${jobId} result response length: ${text.length}`,
+  );
+
+  console.info(
+    `[oxylabs] job ${jobId} result preview: ${text.slice(0, 300)}`,
+  );
+
   let payload: { results?: Array<{ content?: unknown }> };
+
   try {
     payload = JSON.parse(text) as typeof payload;
   } catch {
-    throw new OxylabsError(`Oxylabs returned invalid JSON for job ${jobId}`);
+    console.error(
+      `[oxylabs] job ${jobId} returned non-JSON response`,
+    );
+
+    throw new OxylabsError(
+      `Oxylabs returned invalid JSON for job ${jobId}`,
+    );
   }
 
   const content = payload.results?.[0]?.content;
-  if (typeof content !== "string" || content === "") return null;
+
+  if (typeof content !== "string" || content === "") {
+    console.warn(
+      `[oxylabs] job ${jobId} returned no usable content`,
+    );
+    return null;
+  }
+
   return content;
 }
