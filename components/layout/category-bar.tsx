@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Chip } from "@/components/ui/chip";
 
 const CATEGORIES = [
@@ -14,26 +17,69 @@ const CATEGORIES = [
 
 function ChevronRightIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="m9 6 6 6-6 6" />
     </svg>
   );
 }
 
-/** Horizontally scrollable category chip row. Overflow scrolls; page width stays fixed. */
 export function CategoryBar() {
+  const [selectedCategory, setSelectedCategory] =
+    useState<string | null>(null);
+
+  function handleCategoryClick(category: string) {
+    setSelectedCategory((current) =>
+      current === category ? null : category,
+    );
+  }
+
   return (
     <div className="w-full border-b border-border bg-bg-primary">
       <div className="mx-auto flex max-w-(--container-app) items-center gap-2 px-6 py-3">
-        <span className="shrink-0 text-text-secondary">+</span>
+        <span className="shrink-0 text-text-secondary">
+          +
+        </span>
+
         <div className="flex flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {CATEGORIES.map((label) => (
-            <Chip key={label} label={label} addable className="shrink-0" />
+            <button
+              key={label}
+              type="button"
+              onClick={() =>
+                handleCategoryClick(label)
+              }
+              className="shrink-0"
+            >
+              <Chip
+                label={label}
+                addable={!selectedCategory || selectedCategory !== label}
+                className={
+                  selectedCategory === label
+                    ? "bg-accent text-white"
+                    : ""
+                }
+              />
+            </button>
           ))}
         </div>
-        <span className="shrink-0 text-text-secondary">
+
+        <button
+          type="button"
+          className="shrink-0 text-text-secondary transition hover:text-text-primary"
+          aria-label="Next categories"
+        >
           <ChevronRightIcon />
-        </span>
+        </button>
       </div>
     </div>
   );
