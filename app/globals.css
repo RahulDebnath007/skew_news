@@ -13,6 +13,9 @@
   --color-border: #e5e7eb;
   --color-divider: #e5e7eb;
 
+  /* Top bar */
+  --color-topbar-bg: #0d0d0f;
+
   /* Semantic / bias colors */
   --color-bias-left: #b42318;
   --color-bias-center: #e5e7eb;
@@ -34,48 +37,101 @@
   --container-app: 1280px;
 }
 
+/* =========================================
+   DARK THEME
+   ========================================= */
+
+.dark {
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a1a1aa;
+
+  --color-surface: #18181b;
+  --color-bg-primary: #09090b;
+  --color-bg-secondary: #18181b;
+
+  --color-border: #27272a;
+  --color-divider: #27272a;
+
+  /* Keep TopBar dark in dark mode */
+  --color-topbar-bg: #18181b;
+
+  /* Semantic / bias colors */
+  --color-bias-left: #ef4444;
+  --color-bias-center: #52525b;
+  --color-bias-right: #60a5fa;
+  --color-accent: #60a5fa;
+
+  /* Dark shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================
+   BASE
+   ========================================= */
+
+html {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
 body {
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
-/* Typography scale (Poppins) */
+/* =========================================
+   TYPOGRAPHY SCALE (Poppins)
+   ========================================= */
+
 .text-h1 {
   font-size: 32px;
   font-weight: 700;
   line-height: 1.2;
 }
+
 .text-h2 {
   font-size: 24px;
   font-weight: 600;
   line-height: 1.3;
 }
+
 .text-h3 {
   font-size: 20px;
   font-weight: 600;
   line-height: 1.3;
 }
+
 .text-h4 {
   font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
 }
+
 .text-body-lg {
   font-size: 16px;
   font-weight: 400;
   line-height: 1.6;
 }
+
 .text-body-md {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.6;
 }
+
 .text-body-sm {
   font-size: 13px;
   font-weight: 400;
   line-height: 1.6;
 }
+
 .text-caption {
   font-size: 11px;
   font-weight: 400;
